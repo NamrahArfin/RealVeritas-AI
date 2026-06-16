@@ -1,0 +1,181 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import GlassCard from '../../components/GlassCard';
+import { User, Mail, Lock, ShieldAlert, CheckCircle2 } from 'lucide-react';
+
+const Signup = () => {
+  const { signup } = useAuth();
+  const navigate = useNavigate();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!name || !email || !password || !confirmPassword) {
+      setError('Please populate all request fields.');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setError('Invalid email configuration signature.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Cipher key must contain at least 6 tokens.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Cipher keys do not match.');
+      return;
+    }
+
+    try {
+      const res = signup(name, email, password);
+      if (res.success) {
+        setSuccess('Account provisioned. Booting dashboard...');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 800);
+      }
+    } catch (err) {
+      setError('System creation failed. Contact administration.');
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto px-6 py-12 flex items-center justify-center min-h-[75vh]">
+      <GlassCard className="w-full relative overflow-hidden p-8">
+        {/* Top visual glow bar */}
+        <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-brand-blue to-brand-purple" />
+        
+        <div className="space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="font-orbitron font-extrabold text-xl tracking-wider text-slate-800 dark:text-slate-100">
+              Provision Credentials
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Create a profile to verify digital media
+            </p>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-red-500/20 bg-red-500/5 text-red-600 dark:text-red-400 text-xs font-semibold">
+              <ShieldAlert className="h-4.5 w-4.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+              <CheckCircle2 className="h-4.5 w-4.5 shrink-0" />
+              <span>{success}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name Field */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-orbitron uppercase">
+                Full Name
+              </label>
+              <div className="relative flex items-center">
+                <User className="absolute left-3.5 h-4.5 w-4.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/30 transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Email Field */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-orbitron uppercase">
+                Access Email
+              </label>
+              <div className="relative flex items-center">
+                <Mail className="absolute left-3.5 h-4.5 w-4.5 text-slate-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@domain.com"
+                  className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/30 transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-orbitron uppercase">
+                Cipher Key
+              </label>
+              <div className="relative flex items-center">
+                <Lock className="absolute left-3.5 h-4.5 w-4.5 text-slate-400" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/30 transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Confirm Password Field */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-orbitron uppercase">
+                Confirm Cipher Key
+              </label>
+              <div className="relative flex items-center">
+                <Lock className="absolute left-3.5 h-4.5 w-4.5 text-slate-400" />
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/30 transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className="w-full py-3 rounded-xl font-bold font-orbitron text-xs bg-gradient-to-r from-brand-blue to-brand-purple text-white shadow-md hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 cursor-pointer animate-pulse"
+            >
+              Generate Credentials
+            </button>
+          </form>
+
+          {/* Footer redirection */}
+          <div className="text-center pt-2 border-t border-black/5 dark:border-white/5">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Already have credentials?{' '}
+              <Link 
+                to="/login" 
+                className="font-bold text-brand-blue hover:text-brand-purple transition-colors"
+              >
+                Sign In
+              </Link>
+            </p>
+          </div>
+        </div>
+      </GlassCard>
+    </div>
+  );
+};
+
+export default Signup;

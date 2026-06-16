@@ -1,0 +1,218 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Orbitron:wght@400;600;700;900&display=swap');
+
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-orbitron: 'Orbitron', sans-serif;
+  
+  --color-bg-dark: #09090b;
+  --color-panel-dark: rgba(24, 24, 27, 0.85);
+  --color-border-dark: rgba(255, 255, 255, 0.08);
+  
+  --color-bg-light: #f8fafc;
+  --color-panel-light: rgba(255, 255, 255, 0.9);
+  --color-border-light: rgba(0, 0, 0, 0.12);
+
+  --color-brand-blue: #06b6d4;
+  --color-brand-purple: #6366f1;
+  --color-brand-emerald: #10b981;
+  --color-brand-red: #ef4444;
+
+  --color-slate-400: var(--slate-400);
+  --color-slate-500: var(--slate-500);
+  --color-slate-600: var(--slate-600);
+}
+
+:root {
+  --slate-400: #475569; /* Was #94a3b8 - now slate-600 for high-contrast subtext */
+  --slate-500: #334155; /* Was #64748b - now slate-700 for high-contrast body */
+  --slate-600: #0f172a; /* Was #475569 - now slate-900 for high-contrast headings */
+}
+
+.dark {
+  --slate-400: #cbd5e1;
+  --slate-500: #e2e8f0;
+  --slate-600: #94a3b8;
+}
+
+/* Base custom styles */
+body {
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Futuristic background grid */
+.grid-bg-dark {
+  background-image: 
+    radial-gradient(circle at 50% 30%, rgba(99, 102, 241, 0.06), transparent 70%),
+    radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.04), transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  background-attachment: fixed;
+}
+
+.grid-bg-light {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.06), transparent 60%),
+    radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.04), transparent 40%),
+    linear-gradient(rgba(0, 0, 0, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  background-attachment: fixed;
+}
+
+/* Glassmorphism panel styles */
+.glass-panel {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.glass-panel-light {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04);
+}
+
+.glass-panel-dark, .dark .glass-panel-light {
+  background-color: rgba(24, 24, 27, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Glow effects */
+.glow-blue {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+/* Custom Scanning Line Animation */
+@keyframes scan {
+  0% {
+    top: 0%;
+  }
+  50% {
+    top: 100%;
+  }
+  100% {
+    top: 0%;
+  }
+}
+
+.scanner-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.8), rgba(168, 85, 247, 0.8), transparent);
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.8);
+  animation: scan 4s linear infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Subtle Shimmer for loading states */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.1) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 2s infinite;
+  content: '';
+}
+
+.shimmer-light::after {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 20%,
+    rgba(255, 255, 255, 0.5) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Pulse animation for scanner */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.02);
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+/* Custom gauge progress border style */
+.radial-progress-svg {
+  transform: rotate(-90deg);
+}
+
+/* Grid overlay helper */
+.grid-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background-size: 20px 20px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+.light .grid-bg-overlay {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
