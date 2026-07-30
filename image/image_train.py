@@ -1,26 +1,49 @@
 import os
 import pandas as pd
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from sklearn.utils.class_weight import compute_class_weight
 
-# Load merged dataset
-df = pd.read_csv("datasets/final_train.csv")
+# ---------------------------------------------------------
+# 1. Load Dataset
+# ---------------------------------------------------------
+csv_path = "../datasets/final_train.csv" if os.path.exists("../datasets/final_train.csv") else "datasets/final_train.csv"
+if not os.path.exists(csv_path):
+    csv_path = "final_train.csv"
 
+df = pd.read_csv(csv_path)
+
+print("Class Distribution in Dataset:")
 print(df["label"].value_counts())
 
+# Ensure string labels if using flow_from_dataframe or keep raw ints
+df["label_str"] = df["label"].astype(str)
+
+# ---------------------------------------------------------
+# 2. Data Generators with Augmentation (for WhatsApp/Compression handling)
+# ---------------------------------------------------------
 train_datagen = ImageDataGenerator(
     rescale=1./255,
+    rotation_range=15,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    brightness_range=[0.8, 1.2],
+    horizontal_flip=True,
     validation_split=0.2
 )
 
 train_generator = train_datagen.flow_from_dataframe(
     dataframe=df,
     x_col="file_name",
-    y_col="label",
+    y_col="label_str",
     target_size=(128, 128),
     batch_size=32,
-    class_mode="raw",
+    class_mode="categorical",
     subset="training",
     shuffle=True
 )
@@ -28,70 +51,91 @@ train_generator = train_datagen.flow_from_dataframe(
 val_generator = train_datagen.flow_from_dataframe(
     dataframe=df,
     x_col="file_name",
-    y_col="label",
+    y_col="label_str",
     target_size=(128, 128),
     batch_size=32,
-    class_mode="raw",
+    class_mode="categorical",
     subset="validation",
     shuffle=False
 )
 
-# CNN Model
-model = tf.keras.Sequential([
-    tf.keras.layers.Input(shape=(128,128,3)),
+# ---------------------------------------------------------
+# 3. Class Weights Calculation
+# ---------------------------------------------------------
+classes = np.unique(df["label"])
+weights = compute_class_weight(class_weight="balanced", classes=classes, y=df["label"])
+class_weight_dict = dict(zip(range(len(classes)), weights))
+print("Computed Class Weights:", class_weight_dict)
 
-    tf.keras.layers.Conv2D(32,(3,3),activation="relu"),
-    tf.keras.layers.MaxPooling2D(2,2),
+# ---------------------------------------------------------
+# 4. MobileNetV2 Transfer Learning Architecture
+# ---------------------------------------------------------
+base_model = MobileNetV2(
+    input_shape=(128, 128, 3),
+    include_top=False,
+    weights="imagenet"
+)
+base_model.trainable = True
 
-    tf.keras.layers.Conv2D(64,(3,3),activation="relu"),
-    tf.keras.layers.MaxPooling2D(2,2),
+# Freeze initial layers, fine-tune top layers
+for layer in base_model.layers[:-30]:
+    layer.trainable = False
 
-    tf.keras.layers.Conv2D(128,(3,3),activation="relu"),
-    tf.keras.layers.MaxPooling2D(2,2),
+inputs = Input(shape=(128, 128, 3))
+x = base_model(inputs, training=False)
+x = GlobalAveragePooling2D()(x)
+x = Dense(256, activation="relu")(x)
+x = Dropout(0.4)(x)
+outputs = Dense(3, activation="softmax")(x)
 
-    tf.keras.layers.Flatten(),
-
-    tf.keras.layers.Dense(256,activation="relu"),
-    tf.keras.layers.Dropout(0.5),
-
-    tf.keras.layers.Dense(3,activation="softmax")
-])
+model = Model(inputs, outputs)
 
 model.compile(
-    optimizer="adam",
-    loss="sparse_categorical_crossentropy",
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+    loss="categorical_crossentropy",
     metrics=["accuracy"]
 )
 
 model.summary()
-print("Before Training Output Shape:", model.output_shape)
 
-# Callbacks
-early_stop = EarlyStopping(
-    monitor="val_accuracy",
-    patience=2,
-    restore_best_weights=True
-)
+# ---------------------------------------------------------
+# 5. Training Callbacks
+# ---------------------------------------------------------
+save_model_path = os.path.join(os.path.dirname(__file__), "image_detector_model.h5")
 
-checkpoint = ModelCheckpoint(
-    "image_detector_model.h5",
-    monitor="val_accuracy",
-    save_best_only=True,
-    verbose=1
-)
+callbacks = [
+    EarlyStopping(
+        monitor="val_accuracy",
+        patience=3,
+        restore_best_weights=True
+    ),
+    ModelCheckpoint(
+        save_model_path,
+        monitor="val_accuracy",
+        save_best_only=True,
+        verbose=1
+    ),
+    ReduceLROnPlateau(
+        monitor="val_loss",
+        factor=0.5,
+        patience=2,
+        min_lr=1e-6,
+        verbose=1
+    )
+]
 
-# Train
+# ---------------------------------------------------------
+# 6. Train Model
+# ---------------------------------------------------------
+print("Starting Training with MobileNetV2 Transfer Learning...")
 history = model.fit(
     train_generator,
     validation_data=val_generator,
-    epochs=1,
-    callbacks=[early_stop, checkpoint]
+    epochs=5,
+    class_weight=class_weight_dict,
+    callbacks=callbacks
 )
 
 # Final Save
-model.save("image_detector_model.h5")
-print("After Save Output Shape:", model.output_shape)
-
-print("Saved at:", os.path.abspath("image_detector_model.h5"))
-print("Model Output Shape:", model.output_shape)
-print("3-Class Model Saved Successfully!")
+model.save(save_model_path)
+print("Updated High-Accuracy Model Saved Successfully at:", save_model_path)
