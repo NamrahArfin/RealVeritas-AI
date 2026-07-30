@@ -9,10 +9,11 @@ from bson import ObjectId
 from PIL import Image
 import easyocr
 
-# ==========================
-# Load Model
-# ==========================
-model = tf.keras.models.load_model("../image_detector_model.h5")
+model_path = "../image/image_detector_model.h5"
+if not os.path.exists(model_path):
+    model_path = "../image_detector_model.h5"
+
+model = tf.keras.models.load_model(model_path)
 print("Model Output Shape:", model.output_shape)
 
 # ==========================

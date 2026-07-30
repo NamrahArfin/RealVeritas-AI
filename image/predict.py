@@ -1,8 +1,13 @@
+import os
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import numpy as np
 
-model = tf.keras.models.load_model("image_detector_model.h5")
+model_path = os.path.join(os.path.dirname(__file__), "image_detector_model.h5")
+if not os.path.exists(model_path):
+    model_path = "image_detector_model.h5"
+
+model = tf.keras.models.load_model(model_path)
 
 img_path = input("Enter image path: ")
 
