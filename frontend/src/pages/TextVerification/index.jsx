@@ -4,11 +4,13 @@ import { FileText, Upload, ShieldAlert, ArrowLeft, Play } from 'lucide-react';
 import GlassCard from '../../components/GlassCard';
 import VerificationLogs from '../../components/VerificationLogs';
 import { useVerification } from '../../context/VerificationContext';
+import { useAuth } from '../../context/AuthContext';
 
 const TextVerification = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { addVerification } = useVerification();
+  const { user } = useAuth();
   
   const [textInput, setTextInput] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -35,12 +37,15 @@ const TextVerification = () => {
     let isMounted = true;
     const fetchVerification = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/verify/text', {
+        const response = await fetch('http://127.0.0.1:8000/api/verify/text', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ text: textInput })
+          body: JSON.stringify({ 
+            text: textInput,
+            user_email: user?.email 
+          })
         });
         
         if (!response.ok) {
@@ -91,10 +96,10 @@ const TextVerification = () => {
         let classification = 'Authentic';
         let score = 92;
         let confidence = 93;
-        let summary = 'Document exhibits natural linguistic perplexity. Sentence length patterns show highly organic variance (high burstiness).';
+        let summary = 'Document exhibits natural vocabulary variety. Sentence length patterns show highly organic variance (high sentence rhythm).';
         let reasoning = [
-          'Perplexity Index: 84.6 (very high, indicating non-predictable token generation patterns).',
-          'Burstiness: 68.2 (significant sentence length variance, typical of human authors).',
+          'Vocabulary Variety: 84.6 (very high, indicating non-predictable word choices).',
+          'Sentence Rhythm: 68.2 (significant sentence length variance, typical of human authors).',
           'No repetition anomalies found in transitional or grammatical adverb markers.'
         ];
         let highlights = [];
@@ -104,10 +109,10 @@ const TextVerification = () => {
           classification = 'AI-Generated';
           score = 28;
           confidence = 96;
-          summary = 'High statistical likelihood of GPT-4 generation. Burstiness is abnormally low, indicating uniform writing cadence.';
+          summary = 'High statistical likelihood of GPT-4 generation. Sentence rhythm is abnormally low, indicating uniform writing cadence.';
           reasoning = [
-            'Perplexity Score: 18.2 (highly predictable tokens, characteristic of LLM generators).',
-            'Burstiness: 12.4 (uniform sentence lengths indicate automated pacing).',
+            'Vocabulary Variety: 18.2 (highly predictable word choices, characteristic of LLM generators).',
+            'Sentence Rhythm: 12.4 (uniform sentence lengths indicate automated pacing).',
             'Frequent transitional clusters identified: "Furthermore", "Moreover", "In conclusion" in adjacent paragraphs.',
             'Zero spelling mistakes or colloquial phrasing anomalies identified.'
           ];
@@ -134,8 +139,8 @@ const TextVerification = () => {
           confidence = 87;
           summary = 'Document exhibits signatures of human-AI collaboration. The overall structure is organic, but specific sentences are polished using language tools.';
           reasoning = [
-            'Perplexity Score: 45.3 (moderate vocabulary entropy, reflecting edited passages).',
-            'Burstiness: 35.8 (moderate pacing variation, indicating human content revision).',
+            'Vocabulary Variety: 45.3 (moderate vocabulary variety, reflecting edited passages).',
+            'Sentence Rhythm: 35.8 (moderate pacing variation, indicating human content revision).',
             'Highlights show selective polishing of academic/formal phrasing.'
           ];
           
@@ -253,15 +258,19 @@ const TextVerification = () => {
                 </button>
                 <button
                   onClick={startAnalysis}
-                  disabled={!textInput.trim()}
+                  disabled={!textInput.trim() || textInput.split(/\s+/).filter(Boolean).length < 150}
                   className={`flex-1 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    textInput.trim()
+                    textInput.trim() && textInput.split(/\s+/).filter(Boolean).length >= 150
                       ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-md hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.01] active:scale-[0.99]'
                       : 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed'
                   }`}
                 >
                   <Play className="h-4 w-4" />
-                  <span>Start Authenticity Scan</span>
+                  <span>
+                    {(textInput.trim().length > 0 && textInput.split(/\s+/).filter(Boolean).length < 150)
+                      ? 'Requires 150+ Words' 
+                      : 'Start Authenticity Scan'}
+                  </span>
                 </button>
               </div>
             </div>

@@ -8,31 +8,46 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const login = (email, password) => {
-    // Simulated authentication check - accepts any standard layout
-    const mockUser = {
-      name: email.split('@')[0].toUpperCase(),
-      email: email,
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`,
-      joinDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-      verificationCount: 24,
-    };
-    setUser(mockUser);
-    localStorage.setItem('auth_user', JSON.stringify(mockUser));
-    return { success: true };
+  const login = async (email, password) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, message: data.detail || 'Login failed.' };
+      }
+      
+      setUser(data.user);
+      localStorage.setItem('auth_user', JSON.stringify(data.user));
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: 'Network error. Please try again.' };
+    }
   };
 
-  const signup = (name, email, password) => {
-    const mockUser = {
-      name: name,
-      email: email,
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`,
-      joinDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-      verificationCount: 0,
-    };
-    setUser(mockUser);
-    localStorage.setItem('auth_user', JSON.stringify(mockUser));
-    return { success: true };
+  const signup = async (name, email, password) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, message: data.detail || 'Registration failed.' };
+      }
+      
+      setUser(data.user);
+      localStorage.setItem('auth_user', JSON.stringify(data.user));
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: 'Network error. Please try again.' };
+    }
   };
 
   const logout = () => {

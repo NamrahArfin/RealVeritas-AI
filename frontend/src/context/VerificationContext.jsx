@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from './AuthContext';
 
 const VerificationContext = createContext();
 
@@ -71,23 +72,39 @@ const SEED_DATA = [
 ];
 
 export const VerificationProvider = ({ children }) => {
-  const [history, setHistory] = useState(() => {
-    const saved = localStorage.getItem('verification_history');
-    return saved ? JSON.parse(saved) : SEED_DATA;
-  });
+  const { user } = useAuth();
+  
+  const historyKey = user?.email ? `verification_history_${user.email}` : 'verification_history';
+  const resultKey = user?.email ? `current_result_${user.email}` : 'current_result';
+
+  const [history, setHistory] = useState([]);
+  const [globalFile, setGlobalFile] = useState(null);
 
   const [currentResult, setCurrentResult] = useState(() => {
-    const saved = localStorage.getItem('current_result');
-    return saved ? JSON.parse(saved) : SEED_DATA[0];
+    const saved = localStorage.getItem(resultKey);
+    return saved ? JSON.parse(saved) : null;
   });
 
+  // Fetch history from backend when user changes
   useEffect(() => {
-    localStorage.setItem('verification_history', JSON.stringify(history));
-  }, [history]);
+    if (user?.email) {
+      fetch(`http://127.0.0.1:8000/history?user_email=${encodeURIComponent(user.email)}`)
+        .then(res => res.json())
+        .then(data => setHistory(data))
+        .catch(err => console.error("Failed to fetch history:", err));
+    } else {
+      setHistory([]);
+    }
+
+    const savedResult = localStorage.getItem(resultKey);
+    setCurrentResult(savedResult ? JSON.parse(savedResult) : null);
+  }, [user]);
 
   useEffect(() => {
-    localStorage.setItem('current_result', JSON.stringify(currentResult));
-  }, [currentResult]);
+    if (currentResult !== null) {
+      localStorage.setItem(resultKey, JSON.stringify(currentResult));
+    }
+  }, [currentResult, resultKey]);
 
   const addVerification = useCallback((item) => {
     const newItem = {
@@ -122,11 +139,13 @@ export const VerificationProvider = ({ children }) => {
   const providerValue = useMemo(() => ({
     history,
     currentResult,
+    globalFile,
+    setGlobalFile,
     addVerification,
     getVerification,
     selectVerification,
     deleteVerification
-  }), [history, currentResult, addVerification, getVerification, selectVerification, deleteVerification]);
+  }), [history, currentResult, globalFile, setGlobalFile, addVerification, getVerification, selectVerification, deleteVerification]);
 
   return (
     <VerificationContext.Provider value={providerValue}>

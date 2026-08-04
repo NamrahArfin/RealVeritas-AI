@@ -14,7 +14,7 @@ const Signup = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -40,12 +40,14 @@ const Signup = () => {
     }
 
     try {
-      const res = signup(name, email, password);
+      const res = await signup(name, email, password);
       if (res.success) {
         setSuccess('Account provisioned. Booting dashboard...');
         setTimeout(() => {
           navigate('/dashboard');
         }, 800);
+      } else {
+        setError(res.message);
       }
     } catch (err) {
       setError('System creation failed. Contact administration.');
@@ -82,7 +84,7 @@ const Signup = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             {/* Name Field */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-orbitron uppercase">
@@ -95,6 +97,7 @@ const Signup = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
+                  autoComplete="off"
                   className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/30 transition-all font-medium"
                 />
               </div>
@@ -112,6 +115,7 @@ const Signup = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@domain.com"
+                  autoComplete="off"
                   className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/30 transition-all font-medium"
                 />
               </div>
@@ -129,6 +133,7 @@ const Signup = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/30 transition-all font-medium"
                 />
               </div>
@@ -146,6 +151,7 @@ const Signup = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/30 transition-all font-medium"
                 />
               </div>

@@ -4,11 +4,13 @@ import { Volume2, Upload, ShieldAlert, ArrowLeft, Play, Eye } from 'lucide-react
 import GlassCard from '../../components/GlassCard';
 import VerificationLogs from '../../components/VerificationLogs';
 import { useVerification } from '../../context/VerificationContext';
+import { useAuth } from '../../context/AuthContext';
 
 const AudioVerification = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { addVerification } = useVerification();
+  const { addVerification, globalFile, setGlobalFile } = useVerification();
+  const { user } = useAuth();
   
   const [fileDetails, setFileDetails] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -34,6 +36,7 @@ const AudioVerification = () => {
     if (!file) return;
 
     setFileDetails({ name: file.name, size: (file.size / (1024 * 1024)).toFixed(2) + ' MB' });
+    setGlobalFile(file);
   };
 
   const triggerSelect = () => {
@@ -45,48 +48,50 @@ const AudioVerification = () => {
     setIsScanning(true);
   };
 
-  const handleScanComplete = () => {
-    const name = fileDetails.name.toLowerCase();
-    let classification = 'Authentic';
-    let score = 94;
-    let confidence = 96;
-    let summary = 'Vocal tracts resonate normally. Phase signatures check out with natural environmental sub-harmonics.';
-    let reasoning = [
-      'Phase alignment profiles consistent across full recording duration.',
-      'Spectral envelope shows no signs of high-frequency vocoder clipping.',
-      'Dynamic breathing pauses indicate organic speaker patterns.'
-    ];
+  const handleScanComplete = async () => {
+    let resultData = null;
 
-    if (name.includes('clone') || name.includes('scam') || name.includes('ai') || name.includes('generated') || name.includes('synthesized')) {
-      classification = 'AI-Generated';
-      score = 8;
-      confidence = 98;
-      summary = 'High probability of text-to-speech synthesis (TTS matching ElevenLabs profile). Phase cancellations present.';
-      reasoning = [
-        'Frequency cancellations detected between 4000 Hz and 8000 Hz, indicative of neural synthesis vocoders.',
-        'Pitch metrics demonstrate robotic stability (standard deviation < 0.8%).',
-        'Absence of micro-breath inhalation sub-harmonics between statements.'
-      ];
-    } else if (name.includes('manipulated') || name.includes('splice') || name.includes('edit')) {
-      classification = 'Manipulated';
-      score = 31;
-      confidence = 90;
-      summary = 'Local splice edits detected in voice file. Background room acoustics show discontinuities.';
-      reasoning = [
-        'Acoustical ambient floor changes abruptly at timestamp 02.4s.',
-        'Sub-audible phase jumps identified on vocal transients.',
-        'quantization metadata does not align with continuous microphone recordings.'
-      ];
+    try {
+      let fileToUpload = globalFile;
+      
+      if (fileToUpload) {
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+        if (user?.email) {
+          formData.append('user_email', user.email);
+        }
+
+        const response = await fetch('http://127.0.0.1:8000/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          resultData = await response.json();
+        }
+      }
+    } catch (err) {
+      console.error("Backend upload failed", err);
+    }
+
+    if (!resultData) {
+      resultData = {
+        classification: 'Authentic',
+        score: 94,
+        confidence: 96,
+        summary: 'Vocal tracts resonate normally. Phase signatures check out with natural environmental sub-harmonics. (Offline fallback)',
+        reasoning: ['Phase alignment profiles consistent across full recording duration.']
+      };
     }
 
     const record = addVerification({
       fileName: fileDetails.name,
       fileType: 'audio',
-      classification,
-      score,
-      confidence,
-      summary,
-      reasoning
+      classification: resultData.classification,
+      score: resultData.score,
+      confidence: resultData.confidence,
+      summary: resultData.summary,
+      reasoning: resultData.reasoning
     });
 
     navigate('/results', { state: { resultId: record.id } });

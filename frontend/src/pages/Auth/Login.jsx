@@ -12,7 +12,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -28,12 +28,14 @@ const Login = () => {
     }
 
     try {
-      const res = login(email, password);
+      const res = await login(email, password);
       if (res.success) {
         setSuccess('Authentication approved. Accessing kernel...');
         setTimeout(() => {
           navigate('/dashboard');
         }, 800);
+      } else {
+        setError(res.message);
       }
     } catch (err) {
       setError('System verification failed. Invalid credentials.');

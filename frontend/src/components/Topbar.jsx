@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Bell, Search } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 import { useLocation } from 'react-router-dom';
@@ -46,11 +46,6 @@ const Topbar = ({ onMenuOpen }) => {
 
 
 
-        {/* Notifications Mock */}
-        <button className="relative p-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md text-slate-700 dark:text-slate-300 hover:text-brand-blue hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand-purple"></span>
-        </button>
 
         {/* Theme Toggle */}
         <ThemeToggle />

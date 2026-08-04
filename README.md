@@ -45,8 +45,8 @@ Analyze multiple content types through dedicated verification modules:
 
 * 🖼️ [Image Module](file:///c:/Users/HP/Desktop/RealVeritas-AI/image): Deepfake & Tampering Detection
 * 🎥 Video Module *(Planned)*
-* 🎙️ Audio Module *(In Development)*
-* 📝 Text Module *(In Development)*
+* 🎙️ Audio Module
+* 📝 Text Module
 
 ### Explainable AI
 
@@ -139,9 +139,11 @@ Final Result
 * OpenCV
 * Librosa
 
-### Backend (Planned)
+### Backend
 
 * FastAPI
+* MongoDB
+* Python
 
 ### Deployment
 
@@ -219,12 +221,12 @@ Stores:
 * [x] Dashboard Design
 * [x] Verification Module Layouts
 
-### Upcoming
+### Backend & AI
 
-* [ ] AI Model Integration
-* [ ] Explainability Engine
-* [ ] Backend APIs
-* [ ] Database Integration
+* [x] AI Model Integration (Text & Audio)
+* [x] Explainability Engine (Initial implementation)
+* [x] Backend APIs (FastAPI)
+* [x] Database Integration (MongoDB)
 * [ ] Cloud Deployment
 
 ---
@@ -281,11 +283,11 @@ npm run dev
 <b>Namrah Arfin</b>
 </a>
 <br />
-Project Lead
+Lead Architect
 <br />
-System Architect
+Frontend Engineer
 <br />
-Frontend & Integration
+Module Developer
 </td>
 
 <td align="center">
@@ -295,9 +297,9 @@ Frontend & Integration
 <b>Laxmi Yadav</b>
 </a>
 <br />
-Image & Video Module
+AI Researcher
 <br />
-Developer
+Module Developer
 </td>
 
 <td align="center">
@@ -307,9 +309,9 @@ Developer
 <b>Raj Nandini Dubey</b>
 </a>
 <br />
-Audio & Text Module
+AI Researcher
 <br />
-Developer
+Module Developer
 </td>
 
 </tr>

@@ -5,10 +5,12 @@ import {
   FileCode, ArrowRight
 } from 'lucide-react';
 import GlassCard from '../../components/GlassCard';
+import { useVerification } from '../../context/VerificationContext';
  
 const UploadMedia = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { setGlobalFile } = useVerification();
   
   const [activeTab, setActiveTab] = useState(() => {
     if (location.state && location.state.tab) {
@@ -20,6 +22,7 @@ const UploadMedia = () => {
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [textContent, setTextContent] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -32,7 +35,7 @@ const UploadMedia = () => {
     { id: 'image', label: 'Image', icon: Image, accept: 'image/*', text: 'JPEG, PNG, WEBP up to 10MB' },
     { id: 'video', label: 'Video', icon: Video, accept: 'video/*', text: 'MP4, MOV, MKV up to 50MB' },
     { id: 'audio', label: 'Audio', icon: Volume2, accept: 'audio/*', text: 'WAV, MP3, AAC up to 20MB' },
-    { id: 'text', label: 'Text', icon: FileText, accept: null, text: 'Paste text copy up to 50,000 characters' },
+    { id: 'text', label: 'Text', icon: FileText, accept: '.txt,.pdf,.docx', text: 'Upload .txt, .pdf, .docx or paste text' },
   ];
 
   const handleTabChange = (tabId) => {
@@ -42,9 +45,42 @@ const UploadMedia = () => {
     setTextContent('');
   };
 
+  const extractTextFromFile = async (selectedFile) => {
+    setIsExtracting(true);
+    setFile(selectedFile);
+    
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/extract-text', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTextContent(data.text);
+      } else {
+        console.error('Failed to parse document');
+        setTextContent('Error extracting text from file.');
+      }
+    } catch (err) {
+      console.error(err);
+      setTextContent('Network error while extracting text.');
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
     if (!selected) return;
+
+    if (activeTab === 'text') {
+      extractTextFromFile(selected);
+      return;
+    }
 
     setFile(selected);
     
@@ -73,6 +109,11 @@ const UploadMedia = () => {
       setFile(dropped);
     } else if (activeTab === 'audio' && dropped.type.startsWith('audio/')) {
       setFile(dropped);
+    } else if (activeTab === 'text') {
+      const ext = dropped.name.split('.').pop().toLowerCase();
+      if (['txt', 'pdf', 'docx'].includes(ext)) {
+        extractTextFromFile(dropped);
+      }
     }
   };
 
@@ -87,6 +128,7 @@ const UploadMedia = () => {
       navigate('/text', { state: { text: textContent } });
     } else {
       if (!file) return;
+      setGlobalFile(file);
       // Route to corresponding module passing file details
       navigate(`/${activeTab}`, { 
         state: { 
@@ -222,38 +264,74 @@ const UploadMedia = () => {
               </div>
             ) : (
               /* Text Input form */
-              <div className="space-y-4">
-                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-orbitron uppercase">
-                  Paste Text Content
-                </label>
-                <textarea
-                  value={textContent}
-                  onChange={(e) => setTextContent(e.target.value)}
-                  placeholder="Enter or paste paragraphs here..."
-                  className="w-full h-64 p-4 rounded-xl border border-black/15 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 transition-all font-sans leading-relaxed resize-none"
-                />
-                <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                  <span>Characters: {textContent.length}</span>
-                  <span>Word count: {textContent.split(/\s+/).filter(Boolean).length}</span>
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* File Upload / Drag & Drop for Text */}
+                  <div 
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onClick={triggerFileInput}
+                    className="md:w-1/3 border-2 border-dashed border-black/15 dark:border-white/10 rounded-xl p-6 text-center hover:border-brand-blue/40 hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer flex flex-col items-center justify-center min-h-[220px]"
+                  >
+                    <input 
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept=".txt,.pdf,.docx"
+                      className="hidden"
+                    />
+                    <div className="p-3 rounded-full bg-slate-200/50 dark:bg-slate-900/60 mb-3 border border-black/5 dark:border-white/5">
+                      <Upload className="h-6 w-6 text-slate-500" />
+                    </div>
+                    <p className="font-orbitron font-bold text-xs text-slate-700 dark:text-slate-200">
+                      Upload Document
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-1">.txt, .pdf, .docx</p>
+                    
+                    {file && (
+                      <div className="mt-4 px-3 py-1.5 bg-brand-blue/10 rounded-md">
+                        <p className="text-[10px] font-semibold text-brand-blue truncate w-32">
+                          {file.name}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Textarea for pasting */}
+                  <div className="md:w-2/3 space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-orbitron uppercase">
+                      Or Paste Text Content
+                    </label>
+                    <textarea
+                      value={textContent}
+                      onChange={(e) => setTextContent(e.target.value)}
+                      placeholder={isExtracting ? "Extracting text..." : "Paste or extract text passages to scan for machine-generation signatures..."}
+                      disabled={isExtracting}
+                      className="w-full h-[220px] p-4 rounded-xl border border-black/15 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 text-sm outline-none focus:border-brand-blue/50 transition-all font-sans leading-relaxed resize-none"
+                    />
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                      <span>{textContent.length} characters</span>
+                      <span>{textContent.split(/\s+/).filter(Boolean).length} words</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={!textContent.trim() || textContent.split(/\s+/).filter(Boolean).length < 150}
+                    className={`px-8 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white transition-all flex items-center gap-2 cursor-pointer ${
+                      textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 150
+                        ? 'bg-gradient-to-r from-brand-blue to-brand-purple shadow-md hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:scale-[1.02] active:scale-[0.98]'
+                        : 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed'
+                    }`}
+                  >
+                    <span>Analyze Content</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             )}
-
-            {/* CTA action analysis button */}
-            <div className="mt-6 border-t border-black/5 dark:border-white/5 pt-6 flex justify-end">
-              <button
-                onClick={handleAnalyze}
-                disabled={activeTab === 'text' ? !textContent.trim() : !file}
-                className={`px-6 py-2.5 rounded-xl text-xs font-bold font-orbitron text-white transition-all flex items-center gap-2 cursor-pointer ${
-                  (activeTab === 'text' ? textContent.trim() : file)
-                    ? 'bg-gradient-to-r from-brand-blue to-brand-purple hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:scale-[1.01] active:scale-[0.99]'
-                    : 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed'
-                }`}
-              >
-                <span>Process Verification</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
           </GlassCard>
         </div>
       </div>
