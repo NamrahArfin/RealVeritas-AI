@@ -32,6 +32,7 @@ and classifies them as:
 * ✅ Authentic
 * ⚠️ Manipulated
 * 🤖 AI-Generated
+* 🤝 AI-Assisted / Mixed
 
 Unlike traditional verification systems, RealVeritas AI combines Multi-Modal Analysis with Explainable AI (XAI) to provide transparent and trustworthy results.
 
@@ -234,25 +235,22 @@ Stores:
 ## Repository Structure
 
 ```text
-src/
+RealVeritas-AI/
 │
-├── pages/
-│   ├── ImageVerification/
-│   ├── VideoVerification/
-│   ├── AudioVerification/
-│   ├── TextVerification/
-│   ├── Dashboard/
-│   ├── History/
-│   ├── Analytics/
-│   ├── Profile/
-│   └── Settings/
+├── frontend/
+│   └── src/          # React App & UI Components
 │
-├── components/
-├── assets/
-├── layouts/
-├── routes/
-├── hooks/
-└── services/
+├── backend/
+│   ├── main.py       # FastAPI Server
+│   └── ...           # DB routes & API endpoints
+│
+├── text/
+│   ├── services/     # NLP & BERT Model Verification
+│   ├── models/       # Local AI Weights
+│   └── train/        # Training Scripts
+│
+└── image/
+    └── ...           # Image CNN Models & Scripts
 ```
 
 ---
@@ -261,12 +259,20 @@ src/
 
 ```bash
 git clone https://github.com/NamrahArfin/RealVeritas-AI.git
-
 cd RealVeritas-AI
 
+# 1. Start the Frontend
+cd frontend
 npm install
-
 npm run dev
+
+# 2. Start the Backend (in a new terminal)
+cd ../backend
+python -m venv venv
+# On Windows: venv\Scripts\activate
+# On Mac/Linux: source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
 ---
@@ -284,8 +290,6 @@ npm run dev
 </a>
 <br />
 Lead Architect
-<br />
-Frontend Engineer
 <br />
 Module Developer
 </td>
