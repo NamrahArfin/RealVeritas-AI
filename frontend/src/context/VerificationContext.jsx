@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const VerificationContext = createContext();
 
@@ -89,7 +89,7 @@ export const VerificationProvider = ({ children }) => {
     localStorage.setItem('current_result', JSON.stringify(currentResult));
   }, [currentResult]);
 
-  const addVerification = (item) => {
+  const addVerification = useCallback((item) => {
     const newItem = {
       id: `ver-${Date.now()}`,
       date: new Date().toLocaleString('en-US', {
@@ -105,22 +105,31 @@ export const VerificationProvider = ({ children }) => {
     setHistory((prev) => [newItem, ...prev]);
     setCurrentResult(newItem);
     return newItem;
-  };
+  }, []);
 
-  const getVerification = (id) => {
+  const getVerification = useCallback((id) => {
     return history.find((v) => v.id === id);
-  };
+  }, [history]);
 
-  const selectVerification = (item) => {
+  const selectVerification = useCallback((item) => {
     setCurrentResult(item);
-  };
+  }, []);
 
-  const deleteVerification = (id) => {
+  const deleteVerification = useCallback((id) => {
     setHistory((prev) => prev.filter((v) => v.id !== id));
-  };
+  }, []);
+
+  const providerValue = useMemo(() => ({
+    history,
+    currentResult,
+    addVerification,
+    getVerification,
+    selectVerification,
+    deleteVerification
+  }), [history, currentResult, addVerification, getVerification, selectVerification, deleteVerification]);
 
   return (
-    <VerificationContext.Provider value={{ history, currentResult, addVerification, getVerification, selectVerification, deleteVerification }}>
+    <VerificationContext.Provider value={providerValue}>
       {children}
     </VerificationContext.Provider>
   );

@@ -23,14 +23,16 @@ const Results = () => {
       const match = getVerification(location.state.resultId);
       if (match) {
         setResult(match);
-        selectVerification(match);
+        if (!currentResult || currentResult.id !== match.id) {
+          selectVerification(match);
+        }
       } else {
         setResult(currentResult);
       }
     } else {
       setResult(currentResult);
     }
-  }, [location, currentResult, getVerification, selectVerification]);
+  }, [location.state?.resultId, currentResult, getVerification, selectVerification]);
 
   if (!result) {
     return (
@@ -87,6 +89,13 @@ const Results = () => {
           text: 'text-red-500',
           badge: 'bg-red-500/10 text-red-500 border-red-500/20',
           icon: ShieldAlert
+        };
+      case 'AI-Assisted':
+        return {
+          glow: 'glow-blue border-brand-blue/20 bg-brand-blue/5',
+          text: 'text-brand-blue',
+          badge: 'bg-brand-blue/10 text-brand-blue border-brand-blue/20',
+          icon: Sparkles
         };
       default: // AI-Generated
         return {
@@ -347,17 +356,52 @@ const Results = () => {
             {/* Text Highlights */}
             {result.fileType === 'text' && (
               <div className="p-4 rounded-xl border border-black/10 dark:border-white/10 bg-slate-950 text-slate-300 font-mono text-xs leading-relaxed max-h-56 overflow-y-auto">
-                {result.classification === 'AI-Generated' ? (
-                  <p>
-                    The integration of smart grids <span className="bg-emerald-500/20 border-b border-emerald-500 text-emerald-600 dark:text-emerald-400 px-0.5 py-0.5 rounded cursor-help" title="Burstiness deviation: 94%">represents a key technical lever</span> for renewable energy adoption. <span className="bg-purple-500/20 border-b border-brand-purple text-purple-300 px-0.5 py-0.5 rounded cursor-help" title="Perplexity matches ChatGPT model syntax (92%)">Furthermore, it is important to consider</span> that these architectures optimize distributions. In conclusion, the adoption remains vital.
-                  </p>
-                ) : result.classification === 'Manipulated' ? (
-                  <p>
-                    This statement was typed under surveillance logs. <span className="bg-red-500/20 border-b border-red-500 text-red-300 px-0.5 py-0.5 rounded cursor-help" title="Sudden writing structure delta: splicing mismatch">HOWEVER, METRIC SHIFTS ARE OBSERVED</span> in paragraph segment indices showing style alterations.
-                  </p>
-                ) : (
-                  <p>{result.content || 'Authentic human input verified. Perplexity burstiness ranges indicate organic pacing signatures.'}</p>
-                )}
+                {(() => {
+                  const content = result.content || "";
+                  const highlights = result.highlights || [];
+                  if (!content) return <p>No text content available.</p>;
+                  if (highlights.length === 0) return <p className="whitespace-pre-wrap">{content}</p>;
+
+                  // Sort highlights by start index, filter invalid or overlapping ones
+                  const sorted = [...highlights]
+                    .filter(h => h.start >= 0 && h.end <= content.length && h.start < h.end)
+                    .sort((a, b) => a.start - b.start);
+
+                  const elements = [];
+                  let lastIndex = 0;
+
+                  sorted.forEach((hl, idx) => {
+                    if (hl.start < lastIndex) return; // Skip overlapping highlights
+
+                    if (hl.start > lastIndex) {
+                      elements.push(content.substring(lastIndex, hl.start));
+                    }
+
+                    const isAi = hl.type === 'ai';
+                    const highlightClass = isAi 
+                      ? "bg-purple-500/20 border-b border-brand-purple text-purple-300 px-0.5 py-0.5 rounded cursor-help font-bold"
+                      : "bg-emerald-500/20 border-b border-emerald-500 text-emerald-600 dark:text-emerald-400 px-0.5 py-0.5 rounded cursor-help font-bold";
+                    const tooltipTitle = `${isAi ? 'AI attribution' : 'Human attribution'} score: ${hl.score}`;
+
+                    elements.push(
+                      <span 
+                        key={idx} 
+                        className={highlightClass} 
+                        title={tooltipTitle}
+                      >
+                        {content.substring(hl.start, hl.end)}
+                      </span>
+                    );
+
+                    lastIndex = hl.end;
+                  });
+
+                  if (lastIndex < content.length) {
+                    elements.push(content.substring(lastIndex));
+                  }
+
+                  return <p className="whitespace-pre-wrap">{elements}</p>;
+                })()}
               </div>
             )}
 
