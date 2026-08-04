@@ -32,3 +32,17 @@ dist-ssr/
 # Academic Documents
 *.pdf
 
+# ==========================
+# Python
+# ==========================
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# ==========================
+# ML Project
+# ==========================
+datasets/
+backend/uploads/
+*.h5

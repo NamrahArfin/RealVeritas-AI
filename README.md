@@ -43,10 +43,10 @@ Unlike traditional verification systems, RealVeritas AI combines Multi-Modal Ana
 
 Analyze multiple content types through dedicated verification modules:
 
-* Image Verification
-* Video Verification
-* Audio Verification
-* Text Verification
+* 🖼️ [Image Module](file:///c:/Users/HP/Desktop/RealVeritas-AI/image): Deepfake & Tampering Detection
+* 🎥 Video Module *(Planned)*
+* 🎙️ Audio Module *(In Development)*
+* 📝 Text Module *(In Development)*
 
 ### Explainable AI
 
