@@ -18,10 +18,10 @@ except LookupError:
     nltk.download('punkt_tab', quiet=True)
 
 class TextVerifier:
-    def __init__(self, model_dir="backend/models/text"):
+    def __init__(self, model_dir="models"):
         # Resolve path relative to script directory
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.model_path = os.path.abspath(os.path.join(script_dir, "models/text"))
+        self.model_path = os.path.abspath(os.path.join(script_dir, "models"))
         
         self.tokenizer = None
         self.model = None

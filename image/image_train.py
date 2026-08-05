@@ -101,7 +101,7 @@ model.summary()
 # ---------------------------------------------------------
 # 5. Training Callbacks
 # ---------------------------------------------------------
-save_model_path = os.path.join(os.path.dirname(__file__), "image_detector_model.h5")
+save_model_path = os.path.join(os.path.dirname(__file__), "models", "image_detector_model.h5")
 
 callbacks = [
     EarlyStopping(

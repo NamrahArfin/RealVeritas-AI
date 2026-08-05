@@ -5,7 +5,7 @@ from PIL import Image
 class ImageVerifier:
     def __init__(self, model_dir="image"):
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.model_path = os.path.abspath(os.path.join(script_dir, "image_detector_model.h5"))
+        self.model_path = os.path.abspath(os.path.join(script_dir, "models", "image_detector_model.h5"))
         
         self.image_model = None
         self.ocr_reader = None

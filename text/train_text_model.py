@@ -145,10 +145,10 @@ def train_model(dataset_path, base_model, save_dir, epochs=3, batch_size=4, limi
     print(f"Model fine-tuning complete and saved to {save_dir}")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="RealVeritas AI - Text Model Trainer & Downloader")
+    parser = argparse.ArgumentParser(description="Train text model for AI detection")
     parser.add_argument("--model_name", type=str, default="ahmediqbal/ai-text-detector-model", help="Base HF model name")
-    parser.add_argument("--save_dir", type=str, default="../models/text", help="Directory to save the trained model")
-    parser.add_argument("--dataset_path", type=str, default="", help="Path to training CSV file")
+    parser.add_argument("--save_dir", type=str, default="models", help="Directory to save the trained model")
+    parser.add_argument("--dataset_path", type=str, default="dataset/complete_dataset.csv", help="Path to training CSV file")
     parser.add_argument("--train_synthetic", action="store_true", help="Generate synthetic data and train")
     parser.add_argument("--download_only", action="store_true", help="Only download and cache the model")
     parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs")
