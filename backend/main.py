@@ -16,35 +16,9 @@ from PIL import Image
 # Add root directory to path to access modules outside backend
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from text.services.text_verifier import TextVerifier
+from audio.services.audio_verifier import AudioVerifier
+from image.services.image_verifier import ImageVerifier
 import bcrypt
-
-# ==========================
-# Load Image Model (Safely)
-# ==========================
-image_model = None
-try:
-    import tensorflow as tf
-    model_path = "../image/image_detector_model.h5"
-    if not os.path.exists(model_path):
-        model_path = "../image_detector_model.h5"
-    if os.path.exists(model_path):
-        image_model = tf.keras.models.load_model(model_path)
-        print("Image Model Loaded. Output Shape:", image_model.output_shape)
-    else:
-        print(f"Warning: Image model file not found at {model_path}. Image verification will run in fallback/offline mode.")
-except Exception as e:
-    print(f"Warning: Could not load TensorFlow or image model: {e}. Image verification will run in fallback/offline mode.")
-
-# ==========================
-# Load OCR (Safely)
-# ==========================
-ocr_reader = None
-try:
-    import easyocr
-    ocr_reader = easyocr.Reader(['en'], gpu=False)
-    print("OCR Reader initialized successfully.")
-except Exception as e:
-    print(f"Warning: Could not initialize EasyOCR reader: {e}. OCR text checks will be bypassed.")
 
 # ==========================
 # FastAPI App
@@ -65,7 +39,8 @@ db_connected = False
 try:
     client = MongoClient("mongodb://localhost:27017", serverSelectionTimeoutMS=2000)
     db = client["RealVeritas_AI"]
-    uploads_collection = db["uploads"]
+    image_verifications_collection = db["image_verifications"]
+    audio_verifications_collection = db["audio_verifications"]
     text_verifications_collection = db["text_verifications"]
     users_collection = db["users"]
     # Quick ping to check connection
@@ -76,6 +51,8 @@ except Exception as e:
 
 # Instantiate the TextVerifier service
 verifier = TextVerifier()
+audio_verifier_service = AudioVerifier()
+image_verifier_service = ImageVerifier()
 
 class TextVerificationRequest(BaseModel):
     text: str
@@ -263,6 +240,7 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
         )
         
     is_image = extension in [".jpg", ".jpeg", ".png"]
+    is_audio = extension in [".wav", ".mp3", ".aac"]
 
     # --------------------------
     # Save File
@@ -272,69 +250,8 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
         buffer.write(await file.read())
 
     # --------------------------
-    # Validate Image & OCR (Only for images)
-    # --------------------------
-    if is_image:
-        try:
-            img_check = Image.open(file_path)
-            img_check.verify()
-        except Exception:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            raise HTTPException(
-                status_code=400,
-                detail="Uploaded file is not a valid image."
-            )
-
-        text_percentage = 0.0
-        total_chars = 0
-        num_boxes = 0
-
-        if ocr_reader is not None:
-            try:
-                ocr_result = ocr_reader.readtext(
-                    file_path, detail=1, paragraph=False,
-                    text_threshold=0.5, low_text=0.3
-                )
-                img = Image.open(file_path)
-                img_width, img_height = img.size
-                image_area = img_width * img_height
-                img.close()
-                text_area = 0
-
-                for item in ocr_result:
-                    box, text = item[0], item[1]
-                    total_chars += len(text)
-                    x1, y1 = min(p[0] for p in box), min(p[1] for p in box)
-                    x2, y2 = max(p[0] for p in box), max(p[1] for p in box)
-                    text_area += (x2 - x1) * (y2 - y1)
-
-                text_percentage = text_area / image_area
-                print("========== OCR INFO ==========")
-                print("Detected Text Boxes :", len(ocr_result))
-                print("Detected Characters:", total_chars)
-                print("Text Area Ratio     :", round(text_percentage, 3))
-                print("==============================")
-            except Exception as e:
-                print(f"Error executing OCR: {e}. Bypassing density checks.")
-
-        if ocr_reader is not None and (text_percentage > 0.15 or total_chars > 150 or num_boxes > 20):
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            raise HTTPException(
-                status_code=400,
-                detail="No Detection. Image contains mostly text. Please use the Text Detection Module."
-            )
-
-    # --------------------------
     # Prediction
     # --------------------------
-    labels = {
-        0: "Authentic",
-        1: "AI Generated",
-        2: "AI Manipulated"
-    }
-
     fallback_data = get_media_fallback(file.filename)
     result_label = fallback_data["classification"]
     confidence = fallback_data["confidence"]
@@ -342,32 +259,37 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
     summary = fallback_data["summary"]
     reasoning = fallback_data["reasoning"]
 
-    if is_image and image_model is not None:
-        try:
-            from tensorflow.keras.preprocessing import image as keras_image
-            img = keras_image.load_img(file_path, target_size=(128, 128))
-            img_array = keras_image.img_to_array(img) / 255.0
-            img_array = np.expand_dims(img_array, axis=0)
+    heatmap_url = None
 
-            prediction = image_model.predict(img_array, verbose=0)
-            predicted_class = int(np.argmax(prediction))
-            confidence = round(float(np.max(prediction)) * 100, 2)
-            result_label = labels.get(predicted_class, "Unknown")
-            
-            # Use fallback reasoning/summary for this class to simulate full response
-            if result_label == "AI Manipulated":
-                fallback_data = get_media_fallback("deepfake.jpg")
-            elif result_label == "AI Generated":
-                fallback_data = get_media_fallback("ai.jpg")
-            else:
-                fallback_data = get_media_fallback("real.jpg")
-            
-            score = fallback_data["score"]
-            summary = fallback_data["summary"]
-            reasoning = fallback_data["reasoning"]
-            
+    if is_image:
+        try:
+            print("Processing image with ImageVerifier...")
+            image_res = image_verifier_service.verify_image(file_path)
+            result_label = image_res["classification"]
+            confidence = image_res["confidence"]
+            score = image_res["score"]
+            summary = image_res["summary"]
+            reasoning = image_res["reasoning"]
+            heatmap_url = image_res.get("heatmap_url")
+        except ValueError as ve:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(status_code=400, detail=str(ve))
         except Exception as e:
-            print(f"Prediction failed with exception: {e}. Using fallback classification.")
+            print(f"Image prediction failed: {e}. Using fallback classification.")
+    
+    elif is_audio:
+        try:
+            print("Processing audio with AudioVerifier...")
+            audio_res = audio_verifier_service.verify_audio(file_path)
+            result_label = audio_res["classification"]
+            confidence = audio_res["confidence"]
+            score = audio_res["score"]
+            summary = audio_res["summary"]
+            reasoning = audio_res["reasoning"]
+        except Exception as e:
+            print(f"Audio prediction failed: {e}. Using fallback classification.")
+
 
     print("Prediction Result Label:", result_label)
     print("Confidence:", confidence)
@@ -377,7 +299,7 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
     # --------------------------
     if db_connected:
         try:
-            result = uploads_collection.insert_one({
+            doc = {
                 "filename": file.filename,
                 "filepath": file_path,
                 "prediction": result_label,
@@ -386,9 +308,23 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
                 "summary": summary,
                 "reasoning": reasoning,
                 "uploaded_at": datetime.now(),
-                "user_email": user_email
-            })
-            print("Inserted ID:", result.inserted_id)
+                "user_email": user_email,
+                "heatmap_url": heatmap_url
+            }
+            if is_image:
+                result = image_verifications_collection.insert_one(doc)
+            elif is_audio:
+                result = audio_verifications_collection.insert_one(doc)
+            # Video uploads are no longer saved to DB
+            if 'result' in locals():
+                print("Inserted ID:", result.inserted_id)
+                
+            if user_email:
+                users_collection.update_one(
+                    {"email": user_email},
+                    {"$inc": {"verificationCount": 1}}
+                )
+
         except Exception as e:
             print(f"Failed to save record to database: {e}")
 
@@ -399,7 +335,8 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
         "confidence": confidence,
         "score": score,
         "summary": summary,
-        "reasoning": reasoning
+        "reasoning": reasoning,
+        "heatmap_url": heatmap_url
     }
 
 
@@ -432,6 +369,13 @@ async def verify_text_endpoint(payload: TextVerificationRequest):
                     "timestamp": datetime.utcnow(),
                     "user_email": payload.user_email
                 })
+                
+                if payload.user_email:
+                    users_collection.update_one(
+                        {"email": payload.user_email},
+                        {"$inc": {"verificationCount": 1}}
+                    )
+
             except Exception as db_err:
                 print(f"Database logging failed: {db_err}")
 
@@ -477,29 +421,31 @@ def get_history(user_email: str):
     data = []
     if db_connected:
         try:
-            # Fetch media uploads
-            for item in uploads_collection.find({"user_email": user_email}):
-                ext = os.path.splitext(item.get("filename", ""))[1].lower()
-                fileType = "image"
-                if ext in [".mp4", ".mov", ".mkv"]: fileType = "video"
-                elif ext in [".wav", ".mp3", ".aac"]: fileType = "audio"
-                
-                date_str = ""
-                if "uploaded_at" in item:
-                    date_str = item["uploaded_at"].strftime("%Y-%m-%d %H:%M")
-                
-                data.append({
-                    "id": str(item["_id"]),
-                    "fileName": item.get("filename", ""),
-                    "fileType": fileType,
-                    "classification": item.get("prediction", "Unknown"),
-                    "score": item.get("score", 0),
-                    "confidence": item.get("confidence", 0),
-                    "summary": item.get("summary", ""),
-                    "reasoning": item.get("reasoning", []),
-                    "date": date_str,
-                    "uploaded_at_raw": item.get("uploaded_at")
-                })
+            # Fetch media uploads (from active media collections only)
+            collections_to_check = [image_verifications_collection, audio_verifications_collection]
+            for coll in collections_to_check:
+                for item in coll.find({"user_email": user_email}):
+                    ext = os.path.splitext(item.get("filename", ""))[1].lower()
+                    fileType = "image"
+                    if ext in [".mp4", ".mov", ".mkv"]: fileType = "video"
+                    elif ext in [".wav", ".mp3", ".aac"]: fileType = "audio"
+                    
+                    date_str = ""
+                    if "uploaded_at" in item:
+                        date_str = item["uploaded_at"].strftime("%Y-%m-%d %H:%M")
+                    
+                    data.append({
+                        "id": str(item["_id"]),
+                        "fileName": item.get("filename", ""),
+                        "fileType": fileType,
+                        "classification": item.get("prediction", "Unknown"),
+                        "score": item.get("score", 0),
+                        "confidence": item.get("confidence", 0),
+                        "summary": item.get("summary", ""),
+                        "reasoning": item.get("reasoning", []),
+                        "date": date_str,
+                        "uploaded_at_raw": item.get("uploaded_at")
+                    })
                 
             # Fetch text verifications
             for item in text_verifications_collection.find({"user_email": user_email}):

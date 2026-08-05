@@ -279,7 +279,14 @@ const Results = () => {
                   <div className="text-slate-500 text-xs">Image File Preview</div>
                 )}
                 {/* Visual Heatmap Overlay */}
-                {result.classification !== 'Authentic' && (
+                {result.heatmap_url ? (
+                  <img 
+                    src={result.heatmap_url} 
+                    alt="Grad-CAM Deepfake Heatmap" 
+                    className="absolute inset-0 h-full w-full object-contain pointer-events-none opacity-90 transition-opacity hover:opacity-0" 
+                    title="Hover to see original image"
+                  />
+                ) : result.classification !== 'Authentic' && (
                   <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-red-500/35 to-transparent mix-blend-overlay pointer-events-none animate-pulse" />
                 )}
                 {result.classification === 'Manipulated' && (

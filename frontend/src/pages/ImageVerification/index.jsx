@@ -77,13 +77,18 @@ const ImageVerification = () => {
 
         if (response.ok) {
           resultData = await response.json();
+        } else {
+          const errorData = await response.json();
+          alert(`Analysis Failed: ${errorData.detail || 'Server rejected the file'}`);
+          setIsScanning(false);
+          return;
         }
       }
     } catch (err) {
       console.error("Backend upload failed", err);
+      // Fallback only if the backend is completely unreachable (network error)
     }
 
-    // Fallback if backend is unreachable
     if (!resultData) {
       resultData = {
         classification: 'Authentic',
@@ -103,7 +108,8 @@ const ImageVerification = () => {
       confidence: resultData.confidence,
       summary: resultData.summary,
       reasoning: resultData.reasoning,
-      content: previewUrl // Save image preview URL as content reference
+      content: previewUrl, // Save image preview URL as content reference
+      heatmap_url: resultData.heatmap_url // Add Grad-CAM heatmap overlay
     });
 
     // Route to results

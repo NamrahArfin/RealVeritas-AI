@@ -180,85 +180,99 @@ const UploadMedia = () => {
           <GlassCard className="p-8">
             {activeTab !== 'text' ? (
               /* Dropzone for file uploads */
-              <div 
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onClick={!file ? triggerFileInput : undefined}
-                className={`border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center min-h-[280px] transition-all duration-300 ${
-                  file 
-                    ? 'border-brand-purple/30 bg-brand-purple/5' 
-                    : 'border-black/15 dark:border-white/10 hover:border-brand-blue/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer'
-                }`}
-              >
-                {/* File Input hidden */}
-                <input 
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept={tabs.find(t => t.id === activeTab)?.accept}
-                  className="hidden"
-                />
+              <div className="space-y-6">
+                <div 
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onClick={!file ? triggerFileInput : undefined}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center min-h-[280px] transition-all duration-300 ${
+                    file 
+                      ? 'border-brand-purple/30 bg-brand-purple/5' 
+                      : 'border-black/15 dark:border-white/10 hover:border-brand-blue/40 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer'
+                  }`}
+                >
+                  {/* File Input hidden */}
+                  <input 
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept={tabs.find(t => t.id === activeTab)?.accept}
+                    className="hidden"
+                  />
 
-                {!file ? (
-                  /* Standard Upload state */
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-full bg-slate-200/50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 w-fit mx-auto border border-black/5 dark:border-white/5">
-                      <Upload className="h-8 w-8 animate-bounce" />
-                    </div>
-                    <div>
-                      <h4 className="font-orbitron font-bold text-sm text-slate-800 dark:text-slate-100">
-                        Drag and drop file here, or click to browse
-                      </h4>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                        {tabs.find(t => t.id === activeTab)?.text}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  /* File Loaded Preview State */
-                  <div className="space-y-6 w-full max-w-md">
-                    {/* Visual Preview */}
-                    {activeTab === 'image' && previewUrl ? (
-                      <div className="relative h-44 rounded-lg overflow-hidden border border-black/10 dark:border-white/10 bg-slate-100 dark:bg-slate-900 mx-auto shadow-md">
-                        <img src={previewUrl} alt="preview" className="h-full w-full object-contain" />
+                  {!file ? (
+                    /* Standard Upload state */
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-full bg-slate-200/50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 w-fit mx-auto border border-black/5 dark:border-white/5">
+                        <Upload className="h-8 w-8 animate-bounce" />
                       </div>
-                    ) : (
-                      <div className="p-6 rounded-xl bg-slate-100/50 dark:bg-slate-900/50 border border-black/5 dark:border-white/5 flex items-center gap-4 text-left mx-auto w-full">
-                        <div className="p-3 rounded-lg bg-gradient-to-tr from-brand-blue to-brand-purple text-white">
-                          <FileCode className="h-6 w-6" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-bold font-orbitron text-slate-700 dark:text-slate-200 truncate">
-                            {file.name}
-                          </h4>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                            {(file.size / (1024 * 1024)).toFixed(2)} MB • {file.type || 'unknown type'}
-                          </p>
-                        </div>
+                      <div>
+                        <h4 className="font-orbitron font-bold text-sm text-slate-800 dark:text-slate-100">
+                          Drag and drop file here, or click to browse
+                        </h4>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                          {tabs.find(t => t.id === activeTab)?.text}
+                        </p>
                       </div>
-                    )}
+                    </div>
+                  ) : (
+                    /* File Loaded Preview State */
+                    <div className="space-y-6 w-full max-w-md">
+                      {/* Visual Preview */}
+                      {activeTab === 'image' && previewUrl ? (
+                        <div className="relative h-44 rounded-lg overflow-hidden border border-black/10 dark:border-white/10 bg-slate-100 dark:bg-slate-900 mx-auto shadow-md">
+                          <img src={previewUrl} alt="preview" className="h-full w-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="p-6 rounded-xl bg-slate-100/50 dark:bg-slate-900/50 border border-black/5 dark:border-white/5 flex items-center gap-4 text-left mx-auto w-full">
+                          <div className="p-3 rounded-lg bg-gradient-to-tr from-brand-blue to-brand-purple text-white">
+                            <FileCode className="h-6 w-6" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-xs font-bold font-orbitron text-slate-700 dark:text-slate-200 truncate">
+                              {file.name}
+                            </h4>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                              {(file.size / (1024 * 1024)).toFixed(2)} MB • {file.type || 'unknown type'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                    <div className="flex items-center justify-center gap-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFile(null);
-                          setPreviewUrl('');
-                        }}
-                        className="px-4 py-2 rounded-lg text-xs font-bold font-orbitron border border-red-500/20 text-red-500 hover:bg-red-500/5 transition-colors cursor-pointer"
-                      >
-                        Remove
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerFileInput();
-                        }}
-                        className="px-4 py-2 rounded-lg text-xs font-bold font-orbitron border border-black/10 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                      >
-                        Choose Different
-                      </button>
+                      <div className="flex items-center justify-center gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFile(null);
+                            setPreviewUrl('');
+                          }}
+                          className="px-4 py-2 rounded-lg text-xs font-bold font-orbitron border border-red-500/20 text-red-500 hover:bg-red-500/5 transition-colors cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerFileInput();
+                          }}
+                          className="px-4 py-2 rounded-lg text-xs font-bold font-orbitron border border-black/10 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                        >
+                          Choose Different
+                        </button>
+                      </div>
                     </div>
+                  )}
+                </div>
+                
+                {file && (
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={handleAnalyze}
+                      className="px-8 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white bg-gradient-to-r from-brand-blue to-brand-purple shadow-md hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <span>Analyze Media</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
               </div>

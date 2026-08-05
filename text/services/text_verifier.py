@@ -25,6 +25,8 @@ class TextVerifier:
         
         self.tokenizer = None
         self.model = None
+        self.lm_tokenizer = None
+        self.lm_model = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.is_loaded = False
 
@@ -48,35 +50,43 @@ class TextVerifier:
             
             self.model.to(self.device)
             self.model.eval()
+            
+            print("Loading LM for true perplexity (distilgpt2)...")
+            from transformers import AutoModelForCausalLM
+            self.lm_tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
+            self.lm_model = AutoModelForCausalLM.from_pretrained("distilgpt2").to(self.device)
+            self.lm_model.eval()
+            
             self.is_loaded = True
-            print("Model loaded successfully.")
+            print("Models loaded successfully.")
         except Exception as e:
             print(f"Error loading model: {e}")
             print("Running in fallback rule-based mode until model is initialized.")
 
     def _calculate_perplexity(self, text):
         """
-        Calculates Shannon entropy-based Perplexity.
-        Human text has high perplexity (diverse vocabulary).
-        AI text has low perplexity (uniform, predictable vocabulary).
+        Calculates true Language Model Perplexity using distilgpt2.
+        Human text has high perplexity (unpredictable).
+        AI text has low perplexity (uniform, highly predictable).
         """
-        words = re.findall(r'\b\w+\b', text.lower())
-        if not words:
+        if not self.lm_tokenizer or not self.lm_model:
             return 0.0
-        
-        total_words = len(words)
-        frequencies = {}
-        for word in words:
-            frequencies[word] = frequencies.get(word, 0) + 1
-        
-        entropy = 0.0
-        for count in frequencies.values():
-            probability = count / total_words
-            entropy -= probability * math.log2(probability)
-        
-        perplexity = 2 ** entropy
-        # Scale to match standard range (0-100 representation)
-        perplexity_score = min(max(perplexity * 8.0, 10.0), 98.0)
+
+        encodings = self.lm_tokenizer(text, return_tensors="pt")
+        input_ids = encodings.input_ids.to(self.device)
+        seq_len = input_ids.size(1)
+        if seq_len < 2:
+            return 0.0
+
+        with torch.no_grad():
+            # Shift labels for causal LM loss
+            outputs = self.lm_model(input_ids, labels=input_ids)
+            loss = outputs.loss
+            ppl = torch.exp(loss).item()
+
+        # Scale ppl to 0-100 logic for the frontend
+        # distilgpt2 ppl: typical AI ~20-40, typical Human ~80-150
+        perplexity_score = min(max((ppl / 120.0) * 100, 5.0), 98.0)
         return round(perplexity_score, 1)
 
     def _calculate_burstiness(self, text):
@@ -308,104 +318,76 @@ class TextVerifier:
 
     def _extract_xai_highlights(self, text, classification):
         """
-        Computes XAI word contributions using local token perturbation.
-        Omit a candidate word and observe the model prediction probability drop.
+        Computes XAI word contributions using Captum LayerIntegratedGradients.
         """
-        words_iter = list(re.finditer(r'\b\w{3,15}\b', text))
-        # Filter down candidate words to limit prediction calls (e.g. max 25 content words)
-        candidate_words = []
-        stop_words = {"the", "and", "a", "of", "to", "in", "is", "that", "it", "he", "was", "for", "on", "are", "as", "with", "his", "they", "i"}
+        try:
+            from captum.attr import LayerIntegratedGradients
+        except ImportError:
+            return self._extract_rule_based_highlights(text)
+
+        if not self.is_loaded:
+            return self._extract_rule_based_highlights(text)
+
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+        input_ids = inputs["input_ids"].to(self.device)
+        attention_mask = inputs["attention_mask"].to(self.device)
         
-        for m in words_iter:
-            word = m.group()
-            if word.lower() not in stop_words:
-                candidate_words.append(m)
-                
-        # Limit to 30 candidates to keep execution fast (< 1s on CPU)
-        if len(candidate_words) > 30:
-            # Pick evenly spaced candidate words
-            indices = np.linspace(0, len(candidate_words) - 1, 30, dtype=int)
-            candidate_words = [candidate_words[i] for i in indices]
+        if hasattr(self.model, 'roberta'):
+            embeddings = self.model.roberta.embeddings.word_embeddings
+        elif hasattr(self.model, 'distilbert'):
+            embeddings = self.model.distilbert.embeddings.word_embeddings
+        else:
+            return self._extract_rule_based_highlights(text)
 
+        def forward_func(inputs):
+            return self.model(inputs, attention_mask=attention_mask).logits
+
+        lig = LayerIntegratedGradients(forward_func, embeddings)
+
+        if classification == "AI-Generated":
+            target = 1
+        elif classification == "AI-Assisted" and self.model.config.num_labels > 2:
+            target = 2
+        else:
+            target = 0
+
+        try:
+            attributions, delta = lig.attribute(inputs=input_ids,
+                                                target=target,
+                                                return_convergence_delta=True)
+            attributions = attributions.sum(dim=-1).squeeze(0)
+            attributions = attributions / torch.norm(attributions)
+            attributions = attributions.cpu().numpy()
+        except Exception as e:
+            print(f"Captum attribution failed: {e}")
+            return self._extract_rule_based_highlights(text)
+
+        tokens = self.tokenizer.convert_ids_to_tokens(input_ids[0])
         highlights = []
-        if not candidate_words:
-            return highlights
-
-        # Compute baseline prediction score
-        with torch.no_grad():
-            inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
-            outputs = self.model(**inputs)
-            base_probs = torch.softmax(outputs.logits, dim=-1).cpu().numpy()[0]
-            
-        base_ai_score = base_probs[1]
-        base_human_score = base_probs[0]
-
-        # For each candidate word, mask it and measure probability shift
-        for m in candidate_words:
-            word = m.group()
-            start, end = m.start(), m.end()
-            
-            # Mask the word in text
-            masked_text = text[:start] + "[MASK]" + text[end:]
-            
-            with torch.no_grad():
-                inputs = self.tokenizer(masked_text, return_tensors="pt", truncation=True, max_length=512)
-                inputs = {k: v.to(self.device) for k, v in inputs.items()}
-                outputs = self.model(**inputs)
-                new_probs = torch.softmax(outputs.logits, dim=-1).cpu().numpy()[0]
+        text_idx = 0
+        text_lower = text.lower()
+        
+        for i, token in enumerate(tokens):
+            if token in ["<s>", "</s>", "<pad>", "[CLS]", "[SEP]"]:
+                continue
                 
-            new_ai_score = new_probs[1]
-            new_human_score = new_probs[0]
-            
-            # If masking this word decreases the AI score, then this word contributes to "AI" classification
-            ai_delta = base_ai_score - new_ai_score
-            # If masking this word decreases the Human score, then this word contributes to "Human" classification
-            human_delta = base_human_score - new_human_score
-            
-            if classification == "AI-Generated" and ai_delta > 0.01:
-                highlights.append({
-                    "word": word,
-                    "type": "ai",
-                    "score": round(float(ai_delta) * 10, 2),
-                    "start": start,
-                    "end": end
-                })
-            elif classification == "AI-Assisted":
-                assisted_delta = base_probs[2] - new_probs[2] if len(base_probs) > 2 else 0.0
-                if assisted_delta > 0.01 or ai_delta > 0.01:
-                    highlights.append({
-                        "word": word,
-                        "type": "ai",
-                        "score": round(float(max(ai_delta, assisted_delta)) * 10, 2),
-                        "start": start,
-                        "end": end
-                    })
-            elif classification == "Authentic" and human_delta > 0.01:
-                highlights.append({
-                    "word": word,
-                    "type": "human",
-                    "score": round(float(human_delta) * 10, 2),
-                    "start": start,
-                    "end": end
-                })
-            elif classification == "Manipulated":
-                # For Manipulated (spliced/mixed style), highlight both stylometric shifts
-                if ai_delta > 0.01:
-                    highlights.append({
-                        "word": word,
-                        "type": "ai",
-                        "score": round(float(ai_delta) * 10, 2),
-                        "start": start,
-                        "end": end
-                    })
-                elif human_delta > 0.01:
-                    highlights.append({
-                        "word": word,
-                        "type": "human",
-                        "score": round(float(human_delta) * 10, 2),
-                        "start": start,
-                        "end": end
-                    })
+            token_str = token.replace('Ġ', '').replace('##', '').lower()
+            if not token_str:
+                continue
 
+            search_start = text_lower.find(token_str, text_idx)
+            if search_start != -1:
+                start = search_start
+                end = start + len(token_str)
+                text_idx = end
+                
+                score = float(attributions[i])
+                if score > 0.05:
+                    highlights.append({
+                        "word": text[start:end],
+                        "type": "ai" if target != 0 else "human",
+                        "score": round(score, 2),
+                        "start": start,
+                        "end": end
+                    })
         return highlights
