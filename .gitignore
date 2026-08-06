@@ -54,3 +54,18 @@ backend/uploads/
 *.csv
 text/models/
 backend/models/
+
+# Generated Media
+static/heatmaps/
+static/uploads/
+
+*.txt
+*.ppt
+*.pptx
+
+# Audio Safety
+audio/dataset/
+audio/models/
+
+# HuggingFace Cache
+.cache/

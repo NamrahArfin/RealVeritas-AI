@@ -287,6 +287,7 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
             score = audio_res["score"]
             summary = audio_res["summary"]
             reasoning = audio_res["reasoning"]
+            heatmap_url = audio_res.get("heatmap_url")
         except Exception as e:
             print(f"Audio prediction failed: {e}. Using fallback classification.")
 

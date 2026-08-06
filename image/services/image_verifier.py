@@ -104,11 +104,11 @@ class ImageVerifier:
 
                 num_boxes = len(ocr_result)
                 for item in ocr_result:
-                    box, text = item[0], item[1]
+                    box, text = item[0], item[1]  # type: ignore
                     total_chars += len(text)
                     x1, y1 = min(p[0] for p in box), min(p[1] for p in box)
                     x2, y2 = max(p[0] for p in box), max(p[1] for p in box)
-                    text_area += (x2 - x1) * (y2 - y1)
+                    text_area += (x2 - x1) * (y2 - y1)  # type: ignore
 
                 if image_area > 0:
                     text_percentage = text_area / image_area
@@ -130,7 +130,7 @@ class ImageVerifier:
             try:
                 import tensorflow as tf
                 import cv2
-                from tensorflow.keras.preprocessing import image as keras_image
+                from tensorflow.keras.preprocessing import image as keras_image  # type: ignore
                 
                 img_pil = keras_image.load_img(file_path)
                 width, height = img_pil.size
@@ -205,14 +205,14 @@ class ImageVerifier:
                         grads = tape.gradient(loss, conv_outputs)
                         pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
                         conv_outputs = conv_outputs[0]
-                        heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
+                        heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]  # type: ignore
                         heatmap = tf.squeeze(heatmap)
                         heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
                         heatmap = heatmap.numpy()
                         
                         heatmap = cv2.resize(heatmap, (width, height))
                         heatmap = np.uint8(255 * heatmap)
-                        heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+                        heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)  # type: ignore
                         
                         original_img = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
                         superimposed_img = heatmap * 0.4 + original_img

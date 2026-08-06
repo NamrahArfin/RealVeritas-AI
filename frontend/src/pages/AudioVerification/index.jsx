@@ -68,10 +68,16 @@ const AudioVerification = () => {
 
         if (response.ok) {
           resultData = await response.json();
+        } else {
+          const errorData = await response.json();
+          alert(`Analysis Failed: ${errorData.detail || 'Server rejected the file'}`);
+          setIsScanning(false);
+          return;
         }
       }
     } catch (err) {
       console.error("Backend upload failed", err);
+      // Fallback only if the backend is completely unreachable
     }
 
     if (!resultData) {
@@ -91,7 +97,8 @@ const AudioVerification = () => {
       score: resultData.score,
       confidence: resultData.confidence,
       summary: resultData.summary,
-      reasoning: resultData.reasoning
+      reasoning: resultData.reasoning,
+      heatmap_url: resultData.heatmap_url
     });
 
     navigate('/results', { state: { resultId: record.id } });
