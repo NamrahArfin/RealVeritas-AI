@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Upload, Image, Video, Volume2, FileText, 
   FileCode, ArrowRight
@@ -141,7 +142,12 @@ const UploadMedia = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-8"
+    >
       {/* Page Header */}
       <div className="border-b border-black/5 dark:border-white/5 pb-6">
         <h2 className="text-xl md:text-2xl font-black font-orbitron text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -178,9 +184,17 @@ const UploadMedia = () => {
         {/* Right: Upload Box or text block */}
         <div className="lg:col-span-9 space-y-6">
           <GlassCard className="p-8">
-            {activeTab !== 'text' ? (
-              /* Dropzone for file uploads */
-              <div className="space-y-6">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {activeTab !== 'text' ? (
+                  /* Dropzone for file uploads */
+                  <div className="space-y-6">
                 <div 
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
@@ -266,13 +280,15 @@ const UploadMedia = () => {
                 
                 {file && (
                   <div className="flex justify-end pt-2">
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={handleAnalyze}
-                      className="px-8 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white bg-gradient-to-r from-brand-blue to-brand-purple shadow-md hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                      className="px-8 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white bg-gradient-to-r from-brand-blue to-brand-purple shadow-md hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] transition-all flex items-center gap-2 cursor-pointer"
                     >
                       <span>Analyze Media</span>
                       <ArrowRight className="h-4 w-4" />
-                    </button>
+                    </motion.button>
                   </div>
                 )}
               </div>
@@ -331,25 +347,29 @@ const UploadMedia = () => {
                 </div>
 
                 <div className="flex justify-end pt-2">
-                  <button
+                  <motion.button
+                    whileHover={textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 50 ? { scale: 1.02 } : {}}
+                    whileTap={textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 50 ? { scale: 0.98 } : {}}
                     onClick={handleAnalyze}
                     disabled={!textContent.trim() || textContent.split(/\s+/).filter(Boolean).length < 50}
                     className={`px-8 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white transition-all flex items-center gap-2 cursor-pointer ${
                       textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 50
-                        ? 'bg-gradient-to-r from-brand-blue to-brand-purple shadow-md hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:scale-[1.02] active:scale-[0.98]'
+                        ? 'bg-gradient-to-r from-brand-blue to-brand-purple shadow-md hover:shadow-[0_0_20px_rgba(14,165,233,0.3)]'
                         : 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed'
                     }`}
                   >
                     <span>Analyze Content</span>
                     <ArrowRight className="h-4 w-4" />
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             )}
+              </motion.div>
+            </AnimatePresence>
           </GlassCard>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

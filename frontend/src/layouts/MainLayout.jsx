@@ -18,7 +18,13 @@ const MainLayout = () => {
   }, []);
 
   return (
-    <div className="min-h-screen transition-colors duration-300 bg-bg-light dark:bg-bg-dark text-slate-800 dark:text-slate-100 grid-bg-light dark:grid-bg-dark flex flex-col">
+    <div className="min-h-screen transition-colors duration-300 bg-bg-light dark:bg-bg-dark text-slate-800 dark:text-slate-100 grid-bg-light dark:grid-bg-dark flex flex-col relative overflow-hidden">
+      
+      {/* Animated Vibrant Orbs */}
+      <div className="orb-1" />
+      <div className="orb-2" />
+      <div className="orb-3" />
+
       {/* Landing Navbar */}
       <header 
         className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${

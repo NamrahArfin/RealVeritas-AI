@@ -39,6 +39,11 @@ const DashLayout = () => {
           {/* Subtle grid pattern overlay for futuristic aesthetics */}
           <div className="grid-bg-overlay pointer-events-none" />
           
+          {/* Animated Vibrant Orbs */}
+          <div className="orb-1" />
+          <div className="orb-2" />
+          <div className="orb-3" />
+
           <div className="max-w-7xl mx-auto relative z-10">
             <Outlet />
           </div>

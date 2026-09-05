@@ -14,13 +14,60 @@ import docx
 from bson import ObjectId
 from PIL import Image
 import uuid
+import json
+import google.generativeai as genai
+from dotenv import load_dotenv
 
 # Add root directory to path to access modules outside backend
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from text.services.text_verifier import TextVerifier
 from audio.services.audio_verifier import AudioVerifier
 from image.services.image_verifier import ImageVerifier
+from video.services.video_verifier import VideoVerifier
 import bcrypt
+
+load_dotenv()
+genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
+
+async def generate_dynamic_report(file_type, classification, confidence, original_summary, original_reasoning):
+    api_key = os.getenv("GEMINI_API_KEY", "")
+    if not api_key or api_key == "YOUR_API_KEY_HERE":
+        return original_summary, original_reasoning
+        
+    try:
+        model = genai.GenerativeModel('gemini-flash-latest')
+        prompt = f"""
+You are an expert digital forensics AI translating complex technical reports into simple, easy-to-understand explanations for non-technical users.
+A {file_type} was scanned and classified as {classification} with a confidence score of {confidence}%.
+
+The original highly technical analysis was:
+Summary: {original_summary}
+Reasoning: {', '.join(original_reasoning) if isinstance(original_reasoning, list) else original_reasoning}
+
+Task:
+1. Write a 1-sentence "Executive Summary" that explains the result in extremely simple, plain English (no technical jargon).
+2. Write exactly 2 "System Diagnostic Checklist" points (each 1 sentence). These points should explain WHY the AI made this decision in very simple terms.
+
+Output ONLY in this exact JSON format, nothing else:
+{{
+  "summary": "<1 sentence simple summary>",
+  "reasoning": [
+    "<point 1>",
+    "<point 2>"
+  ]
+}}
+"""
+        response = await model.generate_content_async(prompt)
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:-3]
+        elif text.startswith("```"):
+            text = text[3:-3]
+        data = json.loads(text.strip())
+        return data.get("summary", original_summary), data.get("reasoning", original_reasoning)
+    except Exception as e:
+        print(f"LLM Generation failed: {e}")
+        return original_summary, original_reasoning
 
 # ==========================
 # FastAPI App
@@ -43,6 +90,7 @@ try:
     db = client["RealVeritas_AI"]
     image_verifications_collection = db["image_verifications"]
     audio_verifications_collection = db["audio_verifications"]
+    video_verifications_collection = db["video_verifications"]
     text_verifications_collection = db["text_verifications"]
     users_collection = db["users"]
     # Quick ping to check connection
@@ -55,6 +103,7 @@ except Exception as e:
 verifier = TextVerifier()
 audio_verifier_service = AudioVerifier()
 image_verifier_service = ImageVerifier()
+video_verifier_service = VideoVerifier()
 
 class TextVerificationRequest(BaseModel):
     text: str
@@ -250,6 +299,7 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
         
     is_image = extension in [".jpg", ".jpeg", ".png", ".webp"]
     is_audio = extension in [".wav", ".mp3", ".aac", ".ogg"]
+    is_video = extension in [".mp4", ".mov", ".mkv"]
 
     # --------------------------
     # Save File
@@ -301,10 +351,35 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
             heatmap_url = audio_res.get("heatmap_url")
         except Exception as e:
             print(f"Audio prediction failed: {e}. Using fallback classification.")
+            
+    elif is_video:
+        try:
+            print("Processing video with VideoVerifier...")
+            video_res = video_verifier_service.verify_video(file_path)
+            result_label = video_res["classification"]
+            confidence = video_res["confidence"]
+            score = video_res["score"]
+            summary = video_res.get("summary", "Video verification completed.")
+            reasoning = video_res.get("reasoning", ["CNN+LSTM spatial-temporal extraction.", "Temporal frame sequence consistency check."])
+            heatmap_url = video_res.get("heatmap_url")
+        except Exception as e:
+            print(f"Video prediction failed: {e}. Using fallback classification.")
 
 
     print("Prediction Result Label:", result_label)
     print("Confidence:", confidence)
+
+    # --------------------------
+    # LLM Dynamic Report
+    # --------------------------
+    file_type = "Image" if is_image else "Audio" if is_audio else "Video" if is_video else "File"
+    summary, reasoning = await generate_dynamic_report(
+        file_type=file_type,
+        classification=result_label,
+        confidence=confidence,
+        original_summary=summary,
+        original_reasoning=reasoning
+    )
 
     # --------------------------
     # Save to MongoDB
@@ -327,7 +402,9 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
                 result = image_verifications_collection.insert_one(doc)
             elif is_audio:
                 result = audio_verifications_collection.insert_one(doc)
-            # Video uploads are no longer saved to DB
+            elif is_video:
+                result = video_verifications_collection.insert_one(doc)
+            
             if 'result' in locals():
                 print("Inserted ID:", result.inserted_id)
                 
@@ -434,7 +511,7 @@ def get_history(user_email: str):
     if db_connected:
         try:
             # Fetch media uploads (from active media collections only)
-            collections_to_check = [image_verifications_collection, audio_verifications_collection]
+            collections_to_check = [image_verifications_collection, audio_verifications_collection, video_verifications_collection]
             for coll in collections_to_check:
                 for item in coll.find({"user_email": user_email}):
                     ext = os.path.splitext(item.get("filename", ""))[1].lower()
@@ -514,7 +591,7 @@ def delete_record(id: str):
         collection = None
         
         # Search all collections for the record
-        collections = [image_verifications_collection, audio_verifications_collection, text_verifications_collection]
+        collections = [image_verifications_collection, audio_verifications_collection, video_verifications_collection, text_verifications_collection]
         for coll in collections:
             record = coll.find_one({"_id": obj_id})
             if record:
@@ -545,3 +622,4 @@ def delete_record(id: str):
     return {
         "message": "Record deleted successfully"
     }
+# Trigger reload for uvicorn

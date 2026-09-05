@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   Image, Video, Volume2, FileText, ArrowRight, Sparkles, Activity
 } from 'lucide-react';
@@ -61,10 +62,28 @@ const Dashboard = () => {
     },
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="space-y-8">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-8"
+    >
       {/* 1. Welcome Header */}
-      <div className="border-b border-black/5 dark:border-white/5 pb-6">
+      <motion.div variants={itemVariants} className="border-b border-black/5 dark:border-white/5 pb-6">
         <h2 className="text-xl md:text-2xl font-black font-orbitron text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <span>Welcome, {user?.name || 'User'}</span>
           <Sparkles className="h-5 w-5 text-brand-blue" />
@@ -72,10 +91,10 @@ const Dashboard = () => {
         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
           Verify the authenticity of your digital media assets.
         </p>
-      </div>
+      </motion.div>
 
       {/* 2. Quick stats banner */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Total Analyses', pct: '100%', count: `${totalVerifications} Scans`, color: 'text-brand-blue' },
           { label: 'Authentic', pct: `${totalVerifications ? Math.round((authenticCount / totalVerifications) * 100) : 0}%`, count: `${authenticCount} Scans`, color: 'text-emerald-500' },
@@ -87,7 +106,7 @@ const Dashboard = () => {
               {stat.label}
             </span>
             <div className="flex items-end justify-between mt-2">
-              <span className={`text-2xl font-black font-orbitron leading-none ${stat.color}`}>
+              <span className={`text-2xl font-black font-orbitron leading-none glow-text ${stat.color}`}>
                 {stat.pct}
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-0.5">
@@ -96,10 +115,10 @@ const Dashboard = () => {
             </div>
           </GlassCard>
         ))}
-      </div>
+      </motion.div>
 
       {/* 3. Primary Verification Portals */}
-      <div className="space-y-4">
+      <motion.div variants={itemVariants} className="space-y-4">
         <h3 className="text-xs font-bold font-orbitron text-slate-400 uppercase tracking-widest flex items-center gap-2">
           <Activity className="h-4 w-4 text-brand-blue" />
           <span>Verification Modules</span>
@@ -142,12 +161,13 @@ const Dashboard = () => {
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       {/* 5. Quick activity summary */}
       {history.length > 0 && (
-        <GlassCard className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <motion.div variants={itemVariants}>
+          <GlassCard className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
             <div className="h-3 w-3 rounded-full bg-brand-purple animate-pulse"></div>
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Latest analysis: <strong className="font-bold font-orbitron">{history[0].fileName}</strong> was flagged as <strong className={`${history[0].classification === 'Authentic' ? 'text-emerald-500' : 'text-red-500'}`}>{history[0].classification}</strong>.
@@ -160,10 +180,11 @@ const Dashboard = () => {
             <span>View History logs</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-        </GlassCard>
+          </GlassCard>
+        </motion.div>
       )}
 
-    </div>
+    </motion.div>
   );
 };
 

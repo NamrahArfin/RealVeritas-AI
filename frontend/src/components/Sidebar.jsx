@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, UploadCloud, History, BarChart3, Settings, LogOut
 } from 'lucide-react';
@@ -42,21 +43,22 @@ const Sidebar = ({ isOpen, onClose }) => {
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={onClose}
-              className={({ isActive }) => 
-                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
-                  isActive 
-                    ? 'bg-gradient-to-r from-brand-blue/20 to-brand-purple/20 text-brand-blue border border-brand-blue/30 shadow-[0_0_15px_rgba(14,165,233,0.08)]' 
-                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5 border border-transparent'
-                }`
-              }
-            >
-              <Icon className="h-5 w-5 shrink-0" />
-              <span>{item.label}</span>
-            </NavLink>
+            <motion.div key={item.path} whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
+              <NavLink
+                to={item.path}
+                onClick={onClose}
+                className={({ isActive }) => 
+                  `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    isActive 
+                      ? 'bg-gradient-to-r from-brand-blue/20 to-brand-purple/20 text-brand-blue border border-brand-blue/30 shadow-[0_0_15px_rgba(14,165,233,0.08)]' 
+                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5 border border-transparent'
+                  }`
+                }
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                <span>{item.label}</span>
+              </NavLink>
+            </motion.div>
           );
         })}
       </nav>

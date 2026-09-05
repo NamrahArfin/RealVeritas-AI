@@ -88,7 +88,7 @@ export const VerificationProvider = ({ children }) => {
   // Fetch history from backend when user changes
   useEffect(() => {
     if (user?.email) {
-      fetch(`http://127.0.0.1:8000/history?user_email=${encodeURIComponent(user.email)}`)
+      fetch(`http://127.0.0.1:8000/history?user_email=${encodeURIComponent(user.email)}&t=${Date.now()}`)
         .then(res => res.json())
         .then(data => setHistory(data))
         .catch(err => console.error("Failed to fetch history:", err));

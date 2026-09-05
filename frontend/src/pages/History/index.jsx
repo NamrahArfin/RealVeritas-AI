@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   History, Search, LayoutGrid, List, Trash2, 
   ExternalLink, Eye, ShieldAlert, ShieldCheck, Sparkles, Filter
@@ -59,7 +60,12 @@ const HistoryPage = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-8"
+    >
       {/* Header */}
       <div className="border-b border-black/5 dark:border-white/5 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -164,8 +170,11 @@ const HistoryPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/5 dark:divide-white/5 text-xs">
-                  {filteredHistory.map((item) => (
-                    <tr 
+                  {filteredHistory.map((item, index) => (
+                    <motion.tr 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
                       key={item.id} 
                       className="hover:bg-slate-200/20 dark:hover:bg-slate-800/10 transition-colors"
                     >
@@ -209,7 +218,7 @@ const HistoryPage = () => {
                           </button>
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))}
                 </tbody>
               </table>
@@ -283,7 +292,7 @@ const HistoryPage = () => {
           </p>
         </GlassCard>
       )}
-    </div>
+    </motion.div>
   );
 };
 

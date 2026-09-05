@@ -35,3 +35,6 @@ matplotlib
 gTTS
 datasets
 easyocr
+opencv-python
+google-generativeai
+python-dotenv

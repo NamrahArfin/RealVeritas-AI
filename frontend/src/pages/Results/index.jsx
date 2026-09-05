@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   ShieldCheck, ShieldAlert, Download, Share2, 
   RotateCcw, ArrowLeft, Sparkles, Check, Info,
@@ -122,8 +123,26 @@ const Results = () => {
   const styles = getClassificationStyles(result.classification);
   const StatusIcon = styles.icon;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="space-y-8 print:p-0 print:space-y-4">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-8 print:p-0 print:space-y-4"
+    >
       
       {/* 1. Header Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/5 dark:border-white/5 pb-6 print:hidden">
@@ -220,7 +239,7 @@ const Results = () => {
                 Authenticity Score
               </span>
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black font-orbitron text-slate-800 dark:text-slate-100">
+                <span className={`text-2xl font-black font-orbitron glow-text ${styles.text}`}>
                   {result.score}
                 </span>
                 <span className="text-xs font-bold text-slate-400 dark:text-slate-500 font-orbitron">
@@ -235,7 +254,7 @@ const Results = () => {
                 Confidence Level
               </span>
               <div className="flex items-center gap-3">
-                <span className="text-xl font-bold font-orbitron text-slate-800 dark:text-slate-100">
+                <span className="text-xl font-black font-orbitron glow-text text-brand-blue">
                   {result.confidence}%
                 </span>
                 <div className="w-20 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden hidden sm:block">
@@ -253,7 +272,7 @@ const Results = () => {
       </GlassCard>
 
       {/* 3. Side-by-Side Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* LEFT COLUMN: Visual Diagnostics (lg:col-span-5) */}
         <div className="lg:col-span-5 space-y-6">
@@ -452,11 +471,15 @@ const Results = () => {
               {result.reasoning.map((item, idx) => {
                 const checkInfo = getCheckStatus(item, result.classification);
                 return (
-                  <div key={idx} className={`p-4 rounded-xl border flex items-start justify-between gap-4 transition-all duration-300 ${
-                    checkInfo.isPass 
-                      ? 'border-emerald-500/10 bg-emerald-500/5 hover:border-emerald-500/20' 
-                      : 'border-red-500/10 bg-red-500/5 hover:border-red-500/20'
-                  }`}>
+                  <motion.div 
+                    variants={itemVariants}
+                    key={idx} 
+                    className={`p-4 rounded-xl border flex items-start justify-between gap-4 transition-all duration-300 ${
+                      checkInfo.isPass 
+                        ? 'border-emerald-500/10 bg-emerald-500/5 hover:border-emerald-500/20' 
+                        : 'border-red-500/10 bg-red-500/5 hover:border-red-500/20'
+                    }`}
+                  >
                     <div className="space-y-1 min-w-0">
                       {item.includes(':') ? (
                         <>
@@ -490,7 +513,7 @@ const Results = () => {
                         </>
                       )}
                     </span>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -498,9 +521,9 @@ const Results = () => {
           </GlassCard>
         </div>
 
-      </div>
+      </motion.div>
 
-    </div>
+    </motion.div>
   );
 };
 
