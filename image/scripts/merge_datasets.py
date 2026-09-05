@@ -5,14 +5,15 @@ import pandas as pd
 # Existing Dataset
 # -------------------------
 
-old_df = pd.read_csv("datasets/train.csv")
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+old_df = pd.read_csv(os.path.join(base_dir, "dataset", "train.csv"))
 
 records = []
 
 for _, row in old_df.iterrows():
 
     records.append({
-        "file_name": "datasets/" + row["file_name"],
+        "file_name": os.path.join(base_dir, "dataset", row["file_name"]),
         "label": int(row["label"])
     })
 
@@ -52,6 +53,6 @@ df = pd.DataFrame(records)
 
 print(df["label"].value_counts())
 
-df.to_csv("datasets/final_train.csv", index=False)
+df.to_csv(os.path.join(base_dir, "dataset", "final_train.csv"), index=False)
 
 print("Done")

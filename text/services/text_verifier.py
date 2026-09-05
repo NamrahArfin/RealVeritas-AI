@@ -166,12 +166,12 @@ class TextVerifier:
             score = 90.0
             
             # Simple heuristic matching the mock to ensure initial functionality
-            lower_text = text.lower()
-            if "furthermore" in lower_text and "in conclusion" in lower_text:
+            text_hash = sum(ord(c) for c in text) % 3
+            if text_hash == 2:
                 classification = "AI-Generated"
                 score = 25.0
                 confidence = 92.0
-            elif "polished" in lower_text or "assisted" in lower_text or "improved" in lower_text or ("moreover" in lower_text and "furthermore" not in lower_text):
+            elif text_hash == 1:
                 classification = "AI-Assisted"
                 score = 58.0
                 confidence = 87.0

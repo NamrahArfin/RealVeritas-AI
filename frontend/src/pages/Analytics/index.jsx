@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, Activity, PieChart, TrendingUp, 
@@ -10,11 +10,12 @@ import GlassCard from '../../components/GlassCard';
 const Analytics = () => {
   const navigate = useNavigate();
   const { history } = useVerification();
+  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   const total = history.length;
-  const manipulated = history.filter(v => v.classification === 'Manipulated').length;
-  const ai = history.filter(v => v.classification === 'AI-Generated').length;
-  const authentic = history.filter(v => v.classification === 'Authentic').length;
+  const manipulated = history.filter(v => v.classification?.toLowerCase().includes('manipulat')).length;
+  const ai = history.filter(v => v.classification?.toLowerCase().includes('ai') && v.classification?.toLowerCase().includes('generat')).length;
+  const authentic = history.filter(v => v.classification?.toLowerCase().includes('authentic')).length;
 
   const authPct = total ? Math.round((authentic / total) * 100) : 0;
   const manipPct = total ? Math.round((manipulated / total) * 100) : 0;
@@ -25,14 +26,30 @@ const Analytics = () => {
   const donutStroke = 12;
   const donutCirc = 2 * Math.PI * donutRadius;
   
-  // Calculate stroke offsets for donut segments
-  const authOffset = donutCirc;
-  const manipOffset = donutCirc - (authentic / (total || 1)) * donutCirc;
-  const aiOffset = manipOffset - (manipulated / (total || 1)) * donutCirc;
+  // Calculate live trend data for the last 7 days
+  const trendData = Array(7).fill(0);
+  const todayDate = new Date();
+  todayDate.setHours(0,0,0,0);
+  
+  history.forEach(item => {
+    const itemDate = new Date(item.date.replace(/,/, '')); 
+    itemDate.setHours(0,0,0,0);
+    const diffDays = Math.floor((todayDate - itemDate) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays >= 0 && diffDays < 7) {
+      trendData[6 - diffDays] += 1;
+    }
+  });
 
-  // Trend SVG parameters (Monday - Sunday)
-  const trendData = [3, 7, 5, 12, 8, 14, total + 5]; // simulated dynamic trend scaling with history size
-  const maxVal = Math.max(...trendData);
+  const maxVal = Math.max(...trendData, 4); // Use 4 as minimum maxVal for better visual scaling
+
+  const getDayLabel = (daysAgo) => {
+    if (daysAgo === 0) return "Today";
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return d.toLocaleDateString('en-US', { weekday: 'short' });
+  };
+  const weekLabels = Array.from({length: 7}, (_, i) => getDayLabel(6 - i));
   const svgWidth = 500;
   const svgHeight = 150;
   const padding = 20;
@@ -65,8 +82,8 @@ const Analytics = () => {
         {[
           { label: 'Total Analyses', val: total, color: 'text-brand-blue' },
           { label: 'Authentic Index', val: `${authPct}%`, color: 'text-emerald-500' },
-          { label: 'Manipulated Rate', val: `${manipPct}%`, color: 'text-red-500' },
-          { label: 'Synthetic AI Rate', val: `${aiPct}%`, color: 'text-brand-purple' }
+          { label: 'Manipulated Rate', val: `${manipPct}%`, color: 'text-amber-400' },
+          { label: 'AI Generated Rate', val: `${aiPct}%`, color: 'text-red-500' }
         ].map((kpi, idx) => (
           <GlassCard key={idx} className="p-5 flex flex-col justify-between min-h-[100px]">
             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold font-orbitron uppercase tracking-wider">
@@ -135,20 +152,52 @@ const Analytics = () => {
                   fill={idx === points.length - 1 ? '#a855f7' : '#0ea5e9'} 
                   stroke="currentColor" 
                   strokeWidth="1.5" 
-                  className="hover:r-6 cursor-pointer"
+                  className="hover:r-[6px] cursor-pointer transition-all duration-200"
+                  onMouseEnter={() => setHoveredPoint({ ...p, val: trendData[idx], label: weekLabels[idx] })}
+                  onMouseLeave={() => setHoveredPoint(null)}
+                  onClick={() => navigate('/history')}
                 />
               ))}
+
+              {/* Tooltip Overlay */}
+              {hoveredPoint && (
+                <g className="pointer-events-none transition-all duration-200">
+                  <rect 
+                    x={Math.max(5, Math.min(svgWidth - 65, hoveredPoint.x - 30))}
+                    y={hoveredPoint.y - 38} 
+                    width="60" 
+                    height="26" 
+                    rx="4" 
+                    fill="#0f172a" 
+                    stroke="#1e293b"
+                    strokeWidth="1"
+                  />
+                  <polygon 
+                    points={`${hoveredPoint.x - 4},${hoveredPoint.y - 12} ${hoveredPoint.x + 4},${hoveredPoint.y - 12} ${hoveredPoint.x},${hoveredPoint.y - 6}`}
+                    fill="#0f172a"
+                  />
+                  <text 
+                    x={Math.max(35, Math.min(svgWidth - 35, hoveredPoint.x))}
+                    y={hoveredPoint.y - 21} 
+                    textAnchor="middle" 
+                    fill="#f8fafc" 
+                    fontSize="10" 
+                    fontFamily="monospace"
+                    fontWeight="bold"
+                  >
+                    {hoveredPoint.val} {hoveredPoint.val === 1 ? 'scan' : 'scans'}
+                  </text>
+                </g>
+              )}
             </svg>
           </div>
 
-          <div className="flex justify-between text-[9px] font-mono text-slate-400 dark:text-slate-500 border-t border-black/5 dark:border-white/5 pt-2 mt-2">
-            <span>Mon</span>
-            <span>Tue</span>
-            <span>Wed</span>
-            <span>Thu</span>
-            <span>Fri</span>
-            <span>Sat</span>
-            <span className="font-bold text-brand-purple">Today (Audit)</span>
+          <div className="flex justify-between text-[9px] font-mono text-slate-400 dark:text-slate-500 border-t border-black/5 dark:border-white/5 pt-2 mt-2 px-2">
+            {weekLabels.map((label, idx) => (
+              <span key={idx} className={idx === 6 ? "font-bold text-brand-purple" : ""}>
+                {label}
+              </span>
+            ))}
           </div>
         </GlassCard>
 
@@ -168,7 +217,7 @@ const Analytics = () => {
                 <circle
                   className="text-emerald-500"
                   strokeWidth={donutStroke}
-                  strokeDasharray={donutCirc}
+                  strokeDasharray={`${(authentic / (total || 1)) * donutCirc} ${donutCirc}`}
                   strokeDashoffset={0}
                   stroke="currentColor"
                   fill="transparent"
@@ -178,10 +227,10 @@ const Analytics = () => {
                 />
                 {/* Sector 2: Manipulated */}
                 <circle
-                  className="text-red-500"
+                  className="text-amber-400"
                   strokeWidth={donutStroke}
-                  strokeDasharray={donutCirc}
-                  strokeDashoffset={authOffset - (authentic / total) * donutCirc}
+                  strokeDasharray={`${(manipulated / (total || 1)) * donutCirc} ${donutCirc}`}
+                  strokeDashoffset={-((authentic / (total || 1)) * donutCirc)}
                   stroke="currentColor"
                   fill="transparent"
                   r={donutRadius}
@@ -190,10 +239,10 @@ const Analytics = () => {
                 />
                 {/* Sector 3: AI-Generated */}
                 <circle
-                  className="text-brand-purple"
+                  className="text-red-500"
                   strokeWidth={donutStroke}
-                  strokeDasharray={donutCirc}
-                  strokeDashoffset={donutCirc - (ai / total) * donutCirc}
+                  strokeDasharray={`${(ai / (total || 1)) * donutCirc} ${donutCirc}`}
+                  strokeDashoffset={-(((authentic + manipulated) / (total || 1)) * donutCirc)}
                   stroke="currentColor"
                   fill="transparent"
                   r={donutRadius}
@@ -226,16 +275,16 @@ const Analytics = () => {
               </span>
               <span>{authPct}%</span>
             </div>
-            <div className="flex justify-between items-center text-red-500">
+            <div className="flex justify-between items-center text-amber-400">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                <span className="h-2 w-2 rounded-full bg-amber-400"></span>
                 <span>Manipulated</span>
               </span>
               <span>{manipPct}%</span>
             </div>
-            <div className="flex justify-between items-center text-brand-purple">
+            <div className="flex justify-between items-center text-red-500">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-brand-purple"></span>
+                <span className="h-2 w-2 rounded-full bg-red-500"></span>
                 <span>AI-Generated</span>
               </span>
               <span>{aiPct}%</span>
@@ -244,47 +293,7 @@ const Analytics = () => {
         </GlassCard>
       </div>
 
-      {/* Recent Activity List logs */}
-      {history.length > 0 && (
-        <GlassCard className="space-y-4">
-          <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-3">
-            <h3 className="text-xs font-bold font-orbitron text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
-              <Activity className="h-4.5 w-4.5 text-brand-blue" />
-              <span>Recent Detection Log Ticks</span>
-            </h3>
-            <button
-              onClick={() => navigate('/history')}
-              className="text-[10px] font-bold font-orbitron text-brand-blue hover:text-brand-purple flex items-center gap-1 cursor-pointer transition-colors"
-            >
-              <span>Full Archive</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="divide-y divide-black/5 dark:divide-white/5">
-            {history.slice(0, 3).map((item, idx) => (
-              <div key={idx} className="py-3.5 flex items-center justify-between gap-4 first:pt-0 last:pb-0 text-xs">
-                <div className="min-w-0">
-                  <h4 className="font-bold text-slate-800 dark:text-slate-200 truncate">{item.fileName}</h4>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{item.date} • {item.fileType.toUpperCase()}</p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className={`px-2 py-0.5 rounded border text-[9px] font-bold font-orbitron uppercase ${
-                    item.classification === 'Authentic' 
-                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                      : item.classification === 'Manipulated' 
-                      ? 'bg-red-500/10 text-red-500 border-red-500/20' 
-                      : 'bg-brand-purple/10 text-brand-purple border-brand-purple/20'
-                  }`}>
-                    {item.classification}
-                  </span>
-                  <span className="font-mono text-slate-400 dark:text-slate-500 select-none">Score: {item.score}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-      )}
+      {/* Recent Activity Logs removed as requested */}
 
     </div>
   );

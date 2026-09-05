@@ -97,6 +97,14 @@ body {
   box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
 }
 
+.glow-amber {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+}
+
+.glow-red {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+}
+
 /* Custom Scanning Line Animation */
 @keyframes scan {
   0% {

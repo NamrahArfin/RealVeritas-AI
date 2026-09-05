@@ -75,35 +75,28 @@ const Results = () => {
   };
 
   const getClassificationStyles = (type) => {
-    switch (type) {
-      case 'Authentic':
-        return {
-          glow: 'glow-emerald border-emerald-500/20 bg-emerald-500/5',
-          text: 'text-emerald-500',
-          badge: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-          icon: ShieldCheck
-        };
-      case 'Manipulated':
-        return {
-          glow: 'glow-brand-red border-red-500/20 bg-red-500/5',
-          text: 'text-red-500',
-          badge: 'bg-red-500/10 text-red-500 border-red-500/20',
-          icon: ShieldAlert
-        };
-      case 'AI-Assisted':
-        return {
-          glow: 'glow-blue border-brand-blue/20 bg-brand-blue/5',
-          text: 'text-brand-blue',
-          badge: 'bg-brand-blue/10 text-brand-blue border-brand-blue/20',
-          icon: Sparkles
-        };
-      default: // AI-Generated
-        return {
-          glow: 'glow-purple border-brand-purple/20 bg-brand-purple/5',
-          text: 'text-brand-purple',
-          badge: 'bg-brand-purple/10 text-brand-purple border-brand-purple/20',
-          icon: Sparkles
-        };
+    const cls = (type || '').toLowerCase();
+    if (cls.includes('authentic')) {
+      return {
+        glow: 'glow-emerald border-emerald-500/20 bg-emerald-500/5',
+        text: 'text-emerald-500',
+        badge: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+        icon: ShieldCheck
+      };
+    } else if (cls.includes('manipulat')) {
+      return {
+        glow: 'glow-amber border-amber-400/20 bg-amber-400/5',
+        text: 'text-amber-400',
+        badge: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
+        icon: ShieldAlert
+      };
+    } else {
+      return {
+        glow: 'glow-red border-red-500/20 bg-red-500/5',
+        text: 'text-red-500',
+        badge: 'bg-red-500/10 text-red-500 border-red-500/20',
+        icon: Sparkles
+      };
     }
   };
 
@@ -273,11 +266,21 @@ const Results = () => {
             {/* Image Visualizer */}
             {result.fileType === 'image' && (
               <div className="relative h-64 w-full rounded-xl border border-black/10 dark:border-white/10 overflow-hidden bg-slate-900 flex items-center justify-center">
-                {result.content ? (
-                  <img src={result.content} alt="audit source" className="h-full w-full object-contain" />
-                ) : (
-                  <div className="text-slate-500 text-xs">Image File Preview</div>
-                )}
+                {(result.content || result.fileName) ? (
+                  <img 
+                    src={result.content || `http://127.0.0.1:8000/uploads/${result.fileName}`} 
+                    alt="audit source" 
+                    className="h-full w-full object-contain"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                ) : null}
+                <div className="text-slate-500 text-xs" style={{ display: (result.content || result.fileName) ? 'none' : 'block' }}>
+                  Image File Preview
+                </div>
                 {/* Visual Heatmap Overlay */}
                 {result.heatmap_url ? (
                   <img 
@@ -289,9 +292,9 @@ const Results = () => {
                 ) : result.classification !== 'Authentic' && (
                   <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-red-500/35 to-transparent mix-blend-overlay pointer-events-none animate-pulse" />
                 )}
-                {result.classification === 'Manipulated' && (
-                  <div className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-red-500 w-32 h-20 rounded shadow-[0_0_20px_rgba(239,68,68,0.5)] flex items-center justify-center pointer-events-none">
-                    <span className="text-[9px] font-mono text-white bg-red-600/90 px-1 py-0.5 rounded uppercase font-bold tracking-wider">
+                {result.classification?.toLowerCase().includes('manipulat') && (
+                  <div className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-amber-400 w-32 h-20 rounded shadow-[0_0_20px_rgba(251,191,36,0.5)] flex items-center justify-center pointer-events-none">
+                    <span className="text-[9px] font-mono text-white bg-amber-500/90 px-1 py-0.5 rounded uppercase font-bold tracking-wider">
                       Splice Overlay
                     </span>
                   </div>
@@ -317,8 +320,8 @@ const Results = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
                     { id: 'F-001', label: 'Frames 0-100', status: 'Passed', color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/10' },
-                    { id: 'F-002', label: 'Frames 100-240', status: result.classification === 'Manipulated' ? 'Failed (Lip-sync)' : 'Passed', color: result.classification === 'Manipulated' ? 'text-red-600 dark:text-red-400 bg-red-500/5 border-red-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/10' },
-                    { id: 'F-003', label: 'Frames 240-360', status: result.classification !== 'Authentic' ? 'Failed (Mesh mesh)' : 'Passed', color: result.classification !== 'Authentic' ? 'text-brand-purple bg-brand-purple/5 border-brand-purple/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/10' },
+                    { id: 'F-002', label: 'Frames 100-240', status: result.classification?.toLowerCase().includes('manipulat') ? 'Failed (Lip-sync)' : 'Passed', color: result.classification?.toLowerCase().includes('manipulat') ? 'text-amber-500 dark:text-amber-400 bg-amber-400/5 border-amber-400/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/10' },
+                    { id: 'F-003', label: 'Frames 240-360', status: !result.classification?.toLowerCase().includes('authentic') ? 'Failed (Mesh mesh)' : 'Passed', color: !result.classification?.toLowerCase().includes('authentic') ? 'text-red-500 bg-red-500/5 border-red-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/10' },
                     { id: 'F-004', label: 'Frames 360-480', status: 'Passed', color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 border-emerald-500/10' }
                   ].map((frame, idx) => (
                     <div key={idx} className={`p-2.5 rounded-lg border text-center space-y-1 ${frame.color}`}>
@@ -342,8 +345,8 @@ const Results = () => {
                       <div 
                         key={i} 
                         className={`flex-1 rounded-t-sm ${
-                          result.classification !== 'Authentic' && h > 90 
-                            ? 'bg-gradient-to-t from-fuchsia-500 to-red-500 animate-pulse' 
+                          !result.classification?.toLowerCase().includes('authentic') && h > 90 
+                            ? 'bg-gradient-to-t from-red-400 to-red-600 animate-pulse' 
                             : 'bg-gradient-to-t from-brand-blue/30 to-brand-blue'
                         }`} 
                         style={{ height: `${h}%` }} 
@@ -386,7 +389,7 @@ const Results = () => {
 
                     const isAi = hl.type === 'ai';
                     const highlightClass = isAi 
-                      ? "bg-purple-500/20 border-b border-brand-purple text-purple-300 px-0.5 py-0.5 rounded cursor-help font-bold"
+                      ? "bg-red-500/20 border-b border-red-500 text-red-400 px-0.5 py-0.5 rounded cursor-help font-bold"
                       : "bg-emerald-500/20 border-b border-emerald-500 text-emerald-600 dark:text-emerald-400 px-0.5 py-0.5 rounded cursor-help font-bold";
                     const tooltipTitle = `${isAi ? 'AI attribution' : 'Human attribution'} score: ${hl.score}`;
 

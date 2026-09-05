@@ -26,3 +26,12 @@ python-docx==1.1.0
 passlib[bcrypt]==1.7.4
 librosa
 soundfile
+Pillow
+tensorflow
+torch
+torchvision
+captum
+matplotlib
+gTTS
+datasets
+easyocr

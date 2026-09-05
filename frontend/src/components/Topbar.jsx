@@ -2,7 +2,7 @@ import React from 'react';
 import { Menu, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 
 const Topbar = ({ onMenuOpen }) => {
   const { user } = useAuth();
@@ -34,15 +34,7 @@ const Topbar = ({ onMenuOpen }) => {
 
       {/* Global Actions (Search, Notification, Theme, Profile) */}
       <div className="flex items-center gap-4">
-        {/* Search Mock */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-slate-100/50 dark:bg-slate-900/40 text-slate-400 focus-within:border-brand-blue/50 transition-all duration-200 w-60">
-          <Search className="h-4 w-4 shrink-0 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Search verifications..." 
-            className="bg-transparent border-none outline-none text-xs w-full text-slate-700 dark:text-slate-200 placeholder-slate-400"
-          />
-        </div>
+
 
 
 
@@ -52,7 +44,10 @@ const Topbar = ({ onMenuOpen }) => {
 
         {/* User Mini Avatar */}
         {user && (
-          <div className="flex items-center gap-2 border-l border-slate-300 dark:border-slate-800 pl-4 h-8">
+          <Link 
+            to="/profile"
+            className="flex items-center gap-2 border-l border-slate-300 dark:border-slate-800 pl-4 h-8 cursor-pointer hover:opacity-80 transition-opacity"
+          >
             <img 
               src={user.avatar} 
               alt={user.name} 
@@ -61,7 +56,7 @@ const Topbar = ({ onMenuOpen }) => {
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 hidden md:block">
               {user.name}
             </span>
-          </div>
+          </Link>
         )}
       </div>
     </header>

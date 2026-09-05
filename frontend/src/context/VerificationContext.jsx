@@ -133,7 +133,20 @@ export const VerificationProvider = ({ children }) => {
   }, []);
 
   const deleteVerification = useCallback((id) => {
+    // Optimistically update the UI
     setHistory((prev) => prev.filter((v) => v.id !== id));
+    
+    // Send DELETE request to backend
+    fetch(`http://127.0.0.1:8000/delete/${id}`, {
+      method: 'DELETE'
+    })
+    .then(res => {
+      if (!res.ok) {
+        console.error("Failed to delete from backend:", res.statusText);
+        // Optionally, refetch history here if needed
+      }
+    })
+    .catch(err => console.error("Error calling delete endpoint:", err));
   }, []);
 
   const providerValue = useMemo(() => ({

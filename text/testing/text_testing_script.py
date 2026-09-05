@@ -2,7 +2,7 @@ import os
 import sys
 
 # Ensure backend directory is in the path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.text_verifier import TextVerifier
 

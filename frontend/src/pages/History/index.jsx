@@ -27,19 +27,25 @@ const HistoryPage = () => {
                           item.id.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesType = selectedType === 'all' || item.fileType === selectedType;
-    const matchesClass = selectedClass === 'all' || item.classification === selectedClass;
+    let matchesClass = selectedClass === 'all';
+    if (selectedClass !== 'all') {
+      const cls = (item.classification || '').toLowerCase();
+      if (selectedClass === 'Authentic') matchesClass = cls.includes('authentic');
+      else if (selectedClass === 'Manipulated') matchesClass = cls.includes('manipulat');
+      else if (selectedClass === 'AI-Generated') matchesClass = cls.includes('ai') && cls.includes('generat');
+    }
 
     return matchesSearch && matchesType && matchesClass;
   });
 
   const getBadgeColors = (classification) => {
-    switch (classification) {
-      case 'Authentic':
-        return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-      case 'Manipulated':
-        return 'bg-red-500/10 text-red-500 border-red-500/20';
-      default: // AI-Generated
-        return 'bg-brand-purple/10 text-brand-purple border-brand-purple/20';
+    const cls = (classification || '').toLowerCase();
+    if (cls.includes('authentic')) {
+      return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+    } else if (cls.includes('manipulat')) {
+      return 'bg-amber-400/10 text-amber-400 border-amber-400/20';
+    } else {
+      return 'bg-red-500/10 text-red-500 border-red-500/20';
     }
   };
 
@@ -133,8 +139,8 @@ const HistoryPage = () => {
           >
             <option value="all" className="bg-bg-light dark:bg-bg-dark">All Statuses</option>
             <option value="Authentic" className="bg-bg-light dark:bg-bg-dark text-emerald-500">Authentic</option>
-            <option value="Manipulated" className="bg-bg-light dark:bg-bg-dark text-red-500">Manipulated</option>
-            <option value="AI-Generated" className="bg-bg-light dark:bg-bg-dark text-brand-purple">AI-Generated</option>
+            <option value="Manipulated" className="bg-bg-light dark:bg-bg-dark text-amber-400">Manipulated</option>
+            <option value="AI-Generated" className="bg-bg-light dark:bg-bg-dark text-red-500">AI-Generated</option>
           </select>
         </div>
       </div>

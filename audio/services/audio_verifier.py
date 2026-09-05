@@ -195,8 +195,14 @@ class AudioVerifier:
         # Fallback Logic
         # ==========================
         print("Using Audio Fallback Logic")
-        name = os.path.basename(file_path).lower()
-        if any(k in name for k in ['clone', 'scam', 'ai', 'generated', 'synthesized']):
+        try:
+            file_size = os.path.getsize(file_path)
+        except:
+            file_size = 0
+            
+        category_idx = file_size % 3
+
+        if category_idx == 2:
             return {
                 "classification": "AI-Generated", "score": 8, "confidence": 98,
                 "summary": "High probability of text-to-speech synthesis (Mock Fallback). Phase cancellations present.",
@@ -207,7 +213,7 @@ class AudioVerifier:
                 ],
                 "highlights": []
             }
-        elif any(k in name for k in ['manipulated', 'splice', 'edit']):
+        elif category_idx == 1:
             return {
                 "classification": "Manipulated", "score": 31, "confidence": 90,
                 "summary": "Local splice edits detected in voice file. Background room acoustics show discontinuities.",

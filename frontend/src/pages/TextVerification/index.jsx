@@ -258,17 +258,17 @@ const TextVerification = () => {
                 </button>
                 <button
                   onClick={startAnalysis}
-                  disabled={!textInput.trim() || textInput.split(/\s+/).filter(Boolean).length < 150}
+                  disabled={!textInput.trim() || textInput.split(/\s+/).filter(Boolean).length < 50}
                   className={`flex-1 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    textInput.trim() && textInput.split(/\s+/).filter(Boolean).length >= 150
+                    textInput.trim() && textInput.split(/\s+/).filter(Boolean).length >= 50
                       ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-md hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.01] active:scale-[0.99]'
                       : 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed'
                   }`}
                 >
                   <Play className="h-4 w-4" />
                   <span>
-                    {(textInput.trim().length > 0 && textInput.split(/\s+/).filter(Boolean).length < 150)
-                      ? 'Requires 150+ Words' 
+                    {(textInput.trim().length > 0 && textInput.split(/\s+/).filter(Boolean).length < 50)
+                      ? 'Requires 50+ Words' 
                       : 'Start Authenticity Scan'}
                   </span>
                 </button>

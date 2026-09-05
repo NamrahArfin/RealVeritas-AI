@@ -7,13 +7,16 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import librosa
 from tqdm import tqdm
+import sys
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(base_dir)
 from services.audio_model import AudioCNN
 
 # ==========================================
 # CONFIGURATION
 # ==========================================
-DATASET_PATH = "dataset_npy"
-MODEL_SAVE_PATH = "models/audio_model.pth"
+DATASET_PATH = os.path.join(base_dir, "dataset_npy")
+MODEL_SAVE_PATH = os.path.join(base_dir, "models", "audio_model.pth")
 
 N_MELS = 128
 MAX_TIME_STEPS = 128

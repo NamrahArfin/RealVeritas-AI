@@ -158,7 +158,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     # Resolve directory paths relative to script location
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     save_dir = os.path.abspath(os.path.join(script_dir, args.save_dir))
     
     if args.download_only:

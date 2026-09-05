@@ -14,9 +14,9 @@ const Dashboard = () => {
 
   // Statistics calculations based on loaded history context
   const totalVerifications = history.length;
-  const manipulatedCount = history.filter(v => v.classification === 'Manipulated').length;
-  const aiCount = history.filter(v => v.classification === 'AI-Generated').length;
-  const authenticCount = history.filter(v => v.classification === 'Authentic').length;
+  const manipulatedCount = history.filter(v => v.classification?.toLowerCase().includes('manipulat')).length;
+  const aiCount = history.filter(v => v.classification?.toLowerCase().includes('ai') && v.classification?.toLowerCase().includes('generat')).length;
+  const authenticCount = history.filter(v => v.classification?.toLowerCase().includes('authentic')).length;
 
   const coreModules = [
     { 
@@ -77,21 +77,21 @@ const Dashboard = () => {
       {/* 2. Quick stats banner */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Analyses', val: totalVerifications, desc: 'Logged queries' },
-          { label: 'Authentic Rate', val: `${totalVerifications ? Math.round((authenticCount / totalVerifications) * 100) : 0}%`, desc: 'Verified true' },
-          { label: 'Manipulated Flagged', val: manipulatedCount, desc: 'Splice/Face-swap' },
-          { label: 'Generative Flagged', val: aiCount, desc: 'AI-Generated' }
+          { label: 'Total Analyses', pct: '100%', count: `${totalVerifications} Scans`, color: 'text-brand-blue' },
+          { label: 'Authentic', pct: `${totalVerifications ? Math.round((authenticCount / totalVerifications) * 100) : 0}%`, count: `${authenticCount} Scans`, color: 'text-emerald-500' },
+          { label: 'Manipulated', pct: `${totalVerifications ? Math.round((manipulatedCount / totalVerifications) * 100) : 0}%`, count: `${manipulatedCount} Scans`, color: 'text-amber-400' },
+          { label: 'AI Generated', pct: `${totalVerifications ? Math.round((aiCount / totalVerifications) * 100) : 0}%`, count: `${aiCount} Scans`, color: 'text-red-500' }
         ].map((stat, idx) => (
           <GlassCard key={idx} className="p-4 flex flex-col justify-between min-h-[90px]">
             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold font-orbitron uppercase tracking-wider">
               {stat.label}
             </span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl font-black font-orbitron text-slate-800 dark:text-slate-100">
-                {stat.val}
+            <div className="flex items-end justify-between mt-2">
+              <span className={`text-2xl font-black font-orbitron leading-none ${stat.color}`}>
+                {stat.pct}
               </span>
-              <span className="text-[9px] text-slate-500 dark:text-slate-400 truncate font-semibold">
-                {stat.desc}
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-0.5">
+                {stat.count}
               </span>
             </div>
           </GlassCard>

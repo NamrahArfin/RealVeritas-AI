@@ -10,7 +10,7 @@ def download_sample_audio_data():
     For your real training, you should download a large dataset (like ASVspoof 
     or Mozilla Common Voice) from Kaggle or HuggingFace and extract it into these folders.
     """
-    base_dir = "dataset"
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dataset")
     authentic_dir = os.path.join(base_dir, "authentic")
     ai_dir = os.path.join(base_dir, "ai_generated")
     

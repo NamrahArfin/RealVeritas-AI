@@ -3,8 +3,9 @@ import numpy as np
 import librosa
 from tqdm import tqdm
 
-DATASET_PATH = "dataset"
-OUTPUT_PATH = "dataset_npy"
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATASET_PATH = os.path.join(base_dir, "dataset")
+OUTPUT_PATH = os.path.join(base_dir, "dataset_npy")
 N_MELS = 128
 MAX_TIME_STEPS = 128
 

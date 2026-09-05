@@ -12,9 +12,8 @@ from sklearn.utils.class_weight import compute_class_weight
 # ---------------------------------------------------------
 # 1. Load Dataset
 # ---------------------------------------------------------
-csv_path = "../datasets/final_train.csv" if os.path.exists("../datasets/final_train.csv") else "datasets/final_train.csv"
-if not os.path.exists(csv_path):
-    csv_path = "final_train.csv"
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+csv_path = os.path.join(base_dir, "dataset", "final_train.csv")
 
 df = pd.read_csv(csv_path)
 
@@ -101,7 +100,7 @@ model.summary()
 # ---------------------------------------------------------
 # 5. Training Callbacks
 # ---------------------------------------------------------
-save_model_path = os.path.join(os.path.dirname(__file__), "models", "image_detector_model.h5")
+save_model_path = os.path.join(base_dir, "models", "image_detector_model.h5")
 
 callbacks = [
     EarlyStopping(

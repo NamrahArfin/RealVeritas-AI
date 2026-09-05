@@ -34,7 +34,7 @@ const UploadMedia = () => {
   const tabs = [
     { id: 'image', label: 'Image', icon: Image, accept: 'image/*', text: 'JPEG, PNG, WEBP up to 10MB' },
     { id: 'video', label: 'Video', icon: Video, accept: 'video/*', text: 'MP4, MOV, MKV up to 50MB' },
-    { id: 'audio', label: 'Audio', icon: Volume2, accept: 'audio/*', text: 'WAV, MP3, AAC up to 20MB' },
+    { id: 'audio', label: 'Audio', icon: Volume2, accept: 'audio/*', text: 'WAV, MP3, AAC, OGG up to 20MB' },
     { id: 'text', label: 'Text', icon: FileText, accept: '.txt,.pdf,.docx', text: 'Upload .txt, .pdf, .docx or paste text' },
   ];
 
@@ -333,9 +333,9 @@ const UploadMedia = () => {
                 <div className="flex justify-end pt-2">
                   <button
                     onClick={handleAnalyze}
-                    disabled={!textContent.trim() || textContent.split(/\s+/).filter(Boolean).length < 150}
+                    disabled={!textContent.trim() || textContent.split(/\s+/).filter(Boolean).length < 50}
                     className={`px-8 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white transition-all flex items-center gap-2 cursor-pointer ${
-                      textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 150
+                      textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 50
                         ? 'bg-gradient-to-r from-brand-blue to-brand-purple shadow-md hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:scale-[1.02] active:scale-[0.98]'
                         : 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed'
                     }`}
