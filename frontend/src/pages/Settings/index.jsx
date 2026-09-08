@@ -60,14 +60,13 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8">
       {/* Header */}
       <div className="border-b border-black/5 dark:border-white/5 pb-6">
-        <h2 className="text-xl md:text-2xl font-black font-orbitron text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <span>System Settings panel</span>
-          <Settings className="h-5.5 w-5.5 text-brand-purple" />
+        <h2 className="text-3xl font-black font-orbitron bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(14,165,233,0.3)] flex items-center gap-3">
+          System Settings Panel
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
           Configure visual parameters, update cryptographic credentials, and manage credentials logs.
         </p>
       </div>
@@ -92,13 +91,13 @@ const SettingsPage = () => {
               >
                 {theme === 'dark' ? (
                   <>
-                    <Moon className="h-4 w-4" />
-                    <span>Dark Mode</span>
+                    <Sun className="h-4 w-4" />
+                    <span>Light Mode</span>
                   </>
                 ) : (
                   <>
-                    <Sun className="h-4 w-4" />
-                    <span>Light Mode</span>
+                    <Moon className="h-4 w-4" />
+                    <span>Dark Mode</span>
                   </>
                 )}
               </button>

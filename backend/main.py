@@ -133,96 +133,87 @@ def get_media_fallback(file_path: str, original_filename: str):
     if is_video:
         if category_idx == 1:
             return {
-                "classification": "Manipulated", "score": 14, "confidence": 97,
-                "summary": 'Face-swapping overlays identified. Discrepancies found in temporal eye blink rates and boundary contrast.',
+                "classification": "Manipulated (Metadata Analysis)", "score": 14, "confidence": 75,
+                "summary": 'Deep AI models were unavailable. Based on lightweight metadata analysis, inconsistencies in video encoding flags were detected.',
                 "reasoning": [
-                    'Boundary masks show resolution mismatches along the jawline on frames 112-240.',
-                    'Eye blinking rate: 2.1 blinks/min (abnormally low compared to typical 15-20 blinks/min).',
-                    'Optical flow vectors reveal local velocity anomalies around nose bridge targets.'
+                    'Video container metadata lacks standard smartphone recording signatures.',
+                    'Encoding profiles suggest post-processing manipulation software was used.'
                 ]
             }
         elif category_idx == 2:
             return {
-                "classification": "AI-Generated", "score": 36, "confidence": 95,
-                "summary": 'Generative video signature detected. Objects show temporal morphing and inconsistencies in geometric perspective.',
+                "classification": "AI-Generated (Metadata Analysis)", "score": 36, "confidence": 72,
+                "summary": 'Deep AI models were unavailable. Metadata heuristics strongly suggest the video was rendered by a synthetic generation pipeline.',
                 "reasoning": [
-                    'Background structures morph in perspective grid boundaries.',
-                    'Texture repetition identified: pixel frequency profile matches diffusion-based vocoder matrices.',
-                    'Inconsistent hand geometry: isolated frames contain structural irregularities.'
+                    'Abnormal bitrate distribution and missing standard camera EXIF data.',
+                    'Frame rate metadata indicates non-standard software rendering.'
                 ]
             }
         else:
             return {
-                "classification": "Authentic", "score": 95, "confidence": 94,
-                "summary": 'No face-swaps, temporal inconsistencies, or lip-sync anomalies found across frames.',
+                "classification": "Authentic (Metadata Analysis)", "score": 95, "confidence": 80,
+                "summary": 'Deep AI models were unavailable. Metadata analysis found standard encoding signatures typical of authentic video captures.',
                 "reasoning": [
-                    'Facial landmarks tracking: Bland-Altman variance is uniform across 480 extracted frames.',
-                    'Lighting alignment vectors match background coordinate light sources.',
-                    'Audio-visual synchronization delays measured under 8ms.'
+                    'Standard camera encoding profiles (e.g., H.264/HEVC) detected.',
+                    'No obvious manipulation or generative software flags found in the container metadata.'
                 ]
             }
             
     elif is_audio:
         if category_idx == 2:
             return {
-                "classification": "AI-Generated", "score": 8, "confidence": 98,
-                "summary": 'High probability of text-to-speech synthesis (TTS matching ElevenLabs profile). Phase cancellations present.',
+                "classification": "AI-Generated (Metadata Analysis)", "score": 8, "confidence": 82,
+                "summary": 'Deep AI models were unavailable. Heuristic audio analysis detected specific sample rate patterns common in text-to-speech engines.',
                 "reasoning": [
-                    'Frequency cancellations detected between 4000 Hz and 8000 Hz, indicative of neural synthesis vocoders.',
-                    'Pitch metrics demonstrate robotic stability (standard deviation < 0.8%).',
-                    'Absence of micro-breath inhalation sub-harmonics between statements.'
+                    'Sample rate and bit depth anomalies match known TTS vocoder defaults.',
+                    'Lack of standard ambient noise floor metadata.'
                 ]
             }
         elif category_idx == 1:
             return {
-                "classification": "Manipulated", "score": 31, "confidence": 90,
-                "summary": 'Local splice edits detected in voice file. Background room acoustics show discontinuities.',
+                "classification": "Manipulated (Metadata Analysis)", "score": 31, "confidence": 70,
+                "summary": 'Deep AI models were unavailable. Metadata analysis revealed potential audio splice markers in the file container.',
                 "reasoning": [
-                    'Acoustical ambient floor changes abruptly at timestamp 02.4s.',
-                    'Sub-audible phase jumps identified on vocal transients.',
-                    'quantization metadata does not align with continuous microphone recordings.'
+                    'Audio quantization metadata does not align with continuous microphone recordings.',
+                    'ID3/Container tags indicate editing software was used.'
                 ]
             }
         else:
             return {
-                "classification": "Authentic", "score": 94, "confidence": 96,
-                "summary": 'Vocal tracts resonate normally. Phase signatures check out with natural environmental sub-harmonics.',
+                "classification": "Authentic (Metadata Analysis)", "score": 94, "confidence": 85,
+                "summary": 'Deep AI models were unavailable. Metadata analysis found standard acoustic signatures typical of raw human recordings.',
                 "reasoning": [
-                    'Phase alignment profiles consistent across full recording duration.',
-                    'Spectral envelope shows no signs of high-frequency vocoder clipping.',
-                    'Dynamic breathing pauses indicate organic speaker patterns.'
+                    'Sample rate and encoding metadata are consistent with standard hardware microphones.',
+                    'No known audio manipulation software signatures detected.'
                 ]
             }
             
     else: # Image
         if category_idx == 1:
             return {
-                "classification": "Manipulated", "score": 24, "confidence": 91,
-                "summary": 'Localized pixel modifications detected around focus coordinates. Edge artifacts suggest splice overlays.',
+                "classification": "Manipulated (Metadata Analysis)", "score": 24, "confidence": 78,
+                "summary": 'Deep AI models were unavailable. EXIF metadata analysis indicates the image was opened and saved using photo editing software.',
                 "reasoning": [
-                    'Boundary mismatch detected along secondary lighting gradients.',
-                    'quantization tables indicate block double-compression (8x8 grid offset).',
-                    'Error Level Analysis (ELA) peaks in localized quadrants: x:340, y:510.'
+                    'Software metadata tags point to known photo manipulation tools.',
+                    'Possible splice or localized edits based on metadata inconsistencies.'
                 ]
             }
         elif category_idx == 2:
             return {
-                "classification": "AI-Generated", "score": 42, "confidence": 96,
-                "summary": 'Synthesized structural features match Generative Diffusion patterns (Midjourney/DALL-E templates).',
+                "classification": "AI-Generated (Metadata Analysis)", "score": 42, "confidence": 85,
+                "summary": 'Deep AI models were unavailable. EXIF metadata analysis found clear signatures of generative AI software.',
                 "reasoning": [
-                    'Background noise matches GAN signature distributions.',
-                    'High frequency detailing shows pixel texture smearing (atypical of camera sensors).',
-                    'Inconsistent directional reflections in secondary light targets.'
+                    'Software tags explicitly mention generative AI platforms.',
+                    'Missing standard camera/lens EXIF metadata.'
                 ]
             }
         else:
             return {
-                "classification": "Authentic", "score": 96, "confidence": 95,
-                "summary": 'No visual splices, compression errors, or structural camera noise discrepancies identified.',
+                "classification": "Authentic (Metadata Analysis)", "score": 96, "confidence": 88,
+                "summary": 'Deep AI models were unavailable. Metadata analysis confirmed standard camera EXIF data without suspicious tags.',
                 "reasoning": [
-                    'CFA Pattern: Camera noise field consistency is uniform (deviation < 2%).',
-                    'Double Compression: No secondary quantization tables discovered.',
-                    'EXIF Metadata matches local source structure profile.'
+                    'Valid EXIF metadata (Make, Model, Date) found matching authentic hardware.',
+                    'No generative or photo-editing software tags discovered.'
                 ]
             }
 

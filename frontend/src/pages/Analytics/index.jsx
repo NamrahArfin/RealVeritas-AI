@@ -52,27 +52,28 @@ const Analytics = () => {
   const weekLabels = Array.from({length: 7}, (_, i) => getDayLabel(6 - i));
   const svgWidth = 500;
   const svgHeight = 150;
-  const padding = 20;
+  const paddingX = 20;
+  const paddingBottom = 20;
+  const paddingTop = 20;
 
   // Compute points for SVG Polyline/Path
   const points = trendData.map((val, idx) => {
-    const x = padding + (idx * (svgWidth - 2 * padding)) / (trendData.length - 1);
-    const y = svgHeight - padding - (val / maxVal) * (svgHeight - 2 * padding);
+    const x = paddingX + (idx * (svgWidth - 2 * paddingX)) / (trendData.length - 1);
+    const y = svgHeight - paddingBottom - (val / maxVal) * (svgHeight - paddingTop - paddingBottom);
     return { x, y };
   });
 
   const pathD = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${svgHeight - padding} L ${points[0].x} ${svgHeight - padding} Z`;
+  const areaD = `${pathD} L ${points[points.length - 1].x} ${svgHeight - paddingBottom} L ${points[0].x} ${svgHeight - paddingBottom} Z`;
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="border-b border-black/5 dark:border-white/5 pb-6">
-        <h2 className="text-xl md:text-2xl font-black font-orbitron text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <span>Forensic Performance Analytics</span>
-          <BarChart3 className="h-5.5 w-5.5 text-brand-purple" />
+        <h2 className="text-3xl font-black font-orbitron bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(14,165,233,0.3)] flex items-center gap-3">
+          Forensic Performance Analytics
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
           Statistical modeling profiles showing classification distributions and detection trends.
         </p>
       </div>
@@ -126,10 +127,10 @@ const Analytics = () => {
               {[0.25, 0.5, 0.75, 1].map((r, i) => (
                 <line 
                   key={i} 
-                  x1={padding} 
-                  y1={padding + r * (svgHeight - 2 * padding)} 
-                  x2={svgWidth - padding} 
-                  y2={padding + r * (svgHeight - 2 * padding)} 
+                  x1={paddingX} 
+                  y1={paddingTop + r * (svgHeight - paddingTop - paddingBottom)} 
+                  x2={svgWidth - paddingX} 
+                  y2={paddingTop + r * (svgHeight - paddingTop - paddingBottom)} 
                   stroke="currentColor" 
                   className="opacity-[0.05]"
                   strokeWidth="1"
@@ -162,31 +163,44 @@ const Analytics = () => {
               {/* Tooltip Overlay */}
               {hoveredPoint && (
                 <g className="pointer-events-none transition-all duration-200">
-                  <rect 
-                    x={Math.max(5, Math.min(svgWidth - 65, hoveredPoint.x - 30))}
-                    y={hoveredPoint.y - 38} 
-                    width="60" 
-                    height="26" 
-                    rx="4" 
-                    fill="#0f172a" 
-                    stroke="#1e293b"
-                    strokeWidth="1"
-                  />
-                  <polygon 
-                    points={`${hoveredPoint.x - 4},${hoveredPoint.y - 12} ${hoveredPoint.x + 4},${hoveredPoint.y - 12} ${hoveredPoint.x},${hoveredPoint.y - 6}`}
-                    fill="#0f172a"
-                  />
-                  <text 
-                    x={Math.max(35, Math.min(svgWidth - 35, hoveredPoint.x))}
-                    y={hoveredPoint.y - 21} 
-                    textAnchor="middle" 
-                    fill="#f8fafc" 
-                    fontSize="10" 
-                    fontFamily="monospace"
-                    fontWeight="bold"
-                  >
-                    {hoveredPoint.val} {hoveredPoint.val === 1 ? 'scan' : 'scans'}
-                  </text>
+                  {(() => {
+                    const isNearRight = hoveredPoint.x > svgWidth - 75;
+                    const rectX = isNearRight ? hoveredPoint.x - 70 : hoveredPoint.x + 10;
+                    const rectY = hoveredPoint.y - 13;
+                    return (
+                      <>
+                        <rect 
+                          x={rectX}
+                          y={rectY} 
+                          width="60" 
+                          height="26" 
+                          rx="4" 
+                          fill="#0f172a" 
+                          stroke="#1e293b"
+                          strokeWidth="1"
+                        />
+                        <polygon 
+                          points={isNearRight 
+                            ? `${rectX},${rectY + 9} ${rectX},${rectY + 17} ${rectX + 5},${rectY + 13}` 
+                            : `${rectX},${rectY + 9} ${rectX},${rectY + 17} ${rectX - 5},${rectY + 13}`
+                          }
+                          fill="#0f172a"
+                        />
+                        <text 
+                          x={rectX + 30}
+                          y={rectY + 17} 
+                          textAnchor="middle" 
+                          fill="#ffffff" 
+                          fontSize="10" 
+                          fontFamily="monospace"
+                          fontWeight="bold"
+                          className="fill-white drop-shadow-sm"
+                        >
+                          {hoveredPoint.val} {hoveredPoint.val === 1 ? 'scan' : 'scans'}
+                        </text>
+                      </>
+                    );
+                  })()}
                 </g>
               )}
             </svg>

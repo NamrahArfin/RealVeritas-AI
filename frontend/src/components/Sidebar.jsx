@@ -5,6 +5,7 @@ import {
   LayoutDashboard, UploadCloud, History, BarChart3, Settings, LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from './ThemeToggle';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { logout, user } = useAuth();
@@ -13,78 +14,95 @@ const Sidebar = ({ isOpen, onClose }) => {
   const handleLogout = () => {
     logout();
     if (onClose) onClose();
+    navigate('/login');
   };
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/upload', label: 'Verify Media', icon: UploadCloud },
-    { path: '/history', label: 'History', icon: History },
-    { path: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Verify Media', path: '/upload', icon: UploadCloud },
+    { name: 'History', path: '/history', icon: History },
+    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+    { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-slate-900/90 dark:bg-slate-950/80 border-r border-white/10 text-slate-100 p-4">
+    <div className="flex flex-col h-full bg-slate-100/90 dark:bg-slate-950/80 border-r border-black/10 dark:border-white/10 p-4">
       {/* Brand Logo */}
-      <div className="flex items-center gap-3 px-2 py-4 mb-6 border-b border-white/10">
-        <img src="/logo.png" alt="RealVeritas AI Logo" className="h-10 w-10 object-contain" />
+      <Link to="/" onClick={onClose} className="flex items-center gap-3 px-2 py-4 mb-6 hover:opacity-80 transition-opacity">
+        <div className="relative">
+          <div className="absolute inset-0 bg-brand-blue rounded-xl blur-[10px] opacity-40"></div>
+          <img src="/logo.jpg" alt="RealVeritas Logo" className="relative h-10 w-10 rounded-xl shadow-lg border border-black/10 dark:border-white/10" />
+        </div>
         <div>
-          <h1 className="font-orbitron font-bold text-lg leading-none bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+          <h1 className="font-orbitron font-bold text-lg text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-purple tracking-wide">
             RealVeritas
           </h1>
-          <span className="text-[10px] text-zinc-400 font-semibold tracking-widest uppercase">
-            AI Platform
-          </span>
+          <p className="text-[9px] font-medium tracking-widest text-slate-500 uppercase">AI Platform</p>
         </div>
-      </div>
+      </Link>
 
-      {/* Navigation List */}
-      <nav className="flex-1 space-y-1 hover:overflow-y-auto overflow-hidden pr-1">
+      {/* Navigation Links */}
+      <nav className="flex-1 space-y-1 mt-4 hover:overflow-y-auto overflow-hidden pr-2 pl-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
-            <motion.div key={item.path} whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
-              <NavLink
-                to={item.path}
-                onClick={onClose}
-                className={({ isActive }) => 
-                  `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
-                    isActive 
-                      ? 'bg-gradient-to-r from-brand-blue/20 to-brand-purple/20 text-brand-blue border border-brand-blue/30 shadow-[0_0_15px_rgba(14,165,233,0.08)]' 
-                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5 border border-transparent'
-                  }`
+            <NavLink
+              key={item.name}
+              to={item.path}
+              onClick={onClose}
+              className={({ isActive }) => `
+                relative flex items-center gap-3 px-4 py-3 rounded-xl
+                text-sm font-medium transition-all duration-200
+                ${isActive 
+                  ? 'text-slate-800 dark:text-white bg-black/5 dark:bg-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/5'
                 }
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                <span>{item.label}</span>
-              </NavLink>
-            </motion.div>
+              `}
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active-indicator"
+                      className="absolute left-0 w-1 h-6 bg-brand-blue rounded-r-full shadow-[0_0_10px_rgba(6,182,212,0.6)]"
+                    />
+                  )}
+                  <Icon className={`h-5 w-5 ${isActive ? 'text-brand-blue drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]' : ''}`} />
+                  <span>{item.name}</span>
+                </>
+              )}
+            </NavLink>
           );
         })}
       </nav>
 
-      {/* User Info / Logout */}
+      {/* User Info, Theme & Logout */}
       {user && (
-        <div className="mt-auto border-t border-white/10 pt-4 flex flex-col gap-3">
-          <Link 
-            to="/profile" 
-            onClick={onClose}
-            className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-white/5 transition-all duration-200"
-          >
-            <img 
-              src={user.avatar} 
-              alt="avatar" 
-              className="h-10 w-10 rounded-full border border-white/20 bg-zinc-800 shrink-0" 
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold truncate text-slate-100">{user.name}</p>
-              <p className="text-xs text-zinc-400 truncate">{user.email}</p>
+        <div className="mt-auto border-t border-black/10 dark:border-white/10 pt-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between px-2">
+            <Link 
+              to="/profile" 
+              onClick={onClose}
+              className="flex items-center gap-3 py-1.5 hover:opacity-80 transition-opacity"
+            >
+              <img 
+                src={user.avatar} 
+                alt="avatar" 
+                className="h-10 w-10 rounded-full border border-black/20 dark:border-white/20 bg-slate-200 dark:bg-zinc-800 shrink-0" 
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate text-slate-800 dark:text-slate-100">{user.name}</p>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">{user.email}</p>
+              </div>
+            </Link>
+            <div className="scale-90">
+              <ThemeToggle />
             </div>
-          </Link>
+          </div>
           
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 border border-transparent hover:border-red-500/20 cursor-pointer"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 border border-transparent hover:border-red-500/20 cursor-pointer"
           >
             <LogOut className="h-5 w-5 shrink-0" />
             <span>Logout</span>

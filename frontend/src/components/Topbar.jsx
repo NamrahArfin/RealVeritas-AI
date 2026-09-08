@@ -26,10 +26,6 @@ const Topbar = ({ onMenuOpen }) => {
         >
           <Menu className="h-6 w-6" />
         </button>
-        
-        <h2 className="text-lg font-bold font-orbitron text-slate-800 dark:text-slate-100 tracking-wide">
-          {getPageTitle()}
-        </h2>
       </div>
 
       {/* Global Actions (Search, Notification, Theme, Profile) */}

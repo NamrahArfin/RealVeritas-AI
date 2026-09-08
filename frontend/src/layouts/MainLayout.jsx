@@ -36,7 +36,10 @@ const MainLayout = () => {
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <img src="/logo.png" alt="RealVeritas AI Logo" className="h-10 w-10 object-contain group-hover:scale-105 transition-transform duration-200" />
+            <div className="relative">
+              <div className="absolute -inset-1 bg-brand-blue/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+              <img src="/logo.jpg" alt="RealVeritas AI Logo" className="relative h-10 w-10 object-contain rounded-xl shadow-[0_0_10px_rgba(14,165,233,0.3)] border border-white/10 group-hover:scale-105 transition-transform duration-200" />
+            </div>
             <div>
               <h1 className="font-orbitron font-extrabold text-base tracking-wider bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
                 RealVeritas AI
@@ -86,7 +89,7 @@ const MainLayout = () => {
           {/* Brand Col */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="RealVeritas AI Logo" className="h-8 w-8 object-contain" />
+              <img src="/logo.jpg" alt="RealVeritas AI Logo" className="h-8 w-8 object-contain rounded-lg border border-white/10" />
               <span className="font-orbitron font-extrabold text-sm tracking-widest text-slate-800 dark:text-slate-100">
                 REALVERITAS AI
               </span>

@@ -128,11 +128,10 @@ const ImageVerification = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h2 className="text-xl md:text-2xl font-black font-orbitron text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <span>Image Trust Analyzer</span>
-              <Image className="h-5.5 w-5.5 text-sky-400" />
+            <h2 className="text-3xl font-black font-orbitron bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(14,165,233,0.3)] flex items-center gap-3">
+              Image Integrity Scanner
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
               Check images for edits, cropped changes, and AI generation signatures.
             </p>
           </div>

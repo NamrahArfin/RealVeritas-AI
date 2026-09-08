@@ -39,48 +39,76 @@ class ImageVerifier:
             print(f"Warning: Could not initialize EasyOCR reader: {e}. OCR text checks will be bypassed.")
 
     def _get_media_fallback(self, file_path: str):
-        # Fallback reasoning based on file size deterministic check instead of spoofable filename
+        # Fallback reasoning based on lightweight metadata heuristics
         try:
-            file_size = os.path.getsize(file_path)
-        except:
-            file_size = 0
+            img = Image.open(file_path)
+            exif_data = img.getexif()
             
-        category_idx = file_size % 3
-        
-        if category_idx == 1:
+            # 0x0131 is the standard EXIF tag for 'Software'
+            software_tag = exif_data.get(0x0131, "").lower() if exif_data else ""
+            
+            # Check for known AI / Generative markers
+            ai_markers = ["midjourney", "dall-e", "stable diffusion", "ai generated"]
+            manipulation_markers = ["photoshop", "lightroom", "gimp", "canva"]
+            
+            is_ai = any(marker in software_tag for marker in ai_markers)
+            is_manipulated = any(marker in software_tag for marker in manipulation_markers)
+            
+            if is_ai:
+                return {
+                    "classification": "AI Generated (Metadata Analysis)",
+                    "confidence": 95,
+                    "score": 5,
+                    "summary": "Deep AI models were unavailable, but metadata analysis found strong signatures of generative AI software.",
+                    "reasoning": [
+                        f"EXIF 'Software' tag explicitly lists generative tool: '{software_tag}'.",
+                        "Image is highly likely to be entirely synthetic."
+                    ],
+                    "highlights": []
+                }
+            elif is_manipulated:
+                return {
+                    "classification": "AI Manipulated (Metadata Analysis)",
+                    "confidence": 85,
+                    "score": 25,
+                    "summary": "Deep AI models were unavailable, but metadata analysis indicates the image was edited using photo manipulation software.",
+                    "reasoning": [
+                        f"EXIF 'Software' tag indicates editing tool: '{software_tag}'.",
+                        "While the original photo might be real, it has been altered or spliced."
+                    ],
+                    "highlights": []
+                }
+            elif exif_data and len(exif_data) > 0:
+                return {
+                    "classification": "Authentic (Metadata Analysis)",
+                    "confidence": 75,
+                    "score": 85,
+                    "summary": "Deep AI models were unavailable. Basic metadata checks show standard camera signatures without obvious manipulation flags.",
+                    "reasoning": [
+                        "Valid EXIF data found, typical of authentic camera captures.",
+                        "No known generative or photo-editing software tags detected."
+                    ],
+                    "highlights": []
+                }
+            else:
+                return {
+                    "classification": "Authentic (Metadata Analysis)",
+                    "confidence": 40,
+                    "score": 60,
+                    "summary": "Deep AI models were unavailable. The image contains no metadata, which is common for internet downloads, making it difficult to authenticate heuristically.",
+                    "reasoning": [
+                        "All EXIF metadata has been stripped from the image.",
+                        "Cannot definitively confirm authenticity without deep CNN analysis."
+                    ],
+                    "highlights": []
+                }
+        except Exception as e:
             return {
-                "classification": "AI Manipulated",
-                "confidence": 85,
-                "score": 15,
-                "summary": "Suspicious blending and edge artifacts detected.",
-                "reasoning": [
-                    "Fallback analysis suggests manipulation based on structural markers.",
-                    "Image model evaluation was bypassed or unavailable."
-                ],
-                "highlights": []
-            }
-        elif category_idx == 2:
-            return {
-                "classification": "AI Generated",
-                "confidence": 92,
-                "score": 5,
-                "summary": "GAN/Diffusion artifacts detected.",
-                "reasoning": [
-                    "Fallback analysis suggests fully synthetic generation.",
-                    "Image model evaluation was bypassed or unavailable."
-                ],
-                "highlights": []
-            }
-        else:
-            return {
-                "classification": "Authentic",
-                "confidence": 95,
-                "score": 95,
-                "summary": "No suspicious artifacts detected.",
-                "reasoning": [
-                    "Fallback analysis suggests authentic capture.",
-                    "Image model evaluation was bypassed or unavailable."
-                ],
+                "classification": "Inconclusive",
+                "confidence": 0,
+                "score": 50,
+                "summary": "The system experienced a critical error and could not analyze the image.",
+                "reasoning": [f"File read error: {str(e)}"],
                 "highlights": []
             }
 

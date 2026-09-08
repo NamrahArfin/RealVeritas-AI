@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
-import Topbar from '../components/Topbar';
 
 const DashLayout = () => {
   const { user } = useAuth();
@@ -28,8 +28,23 @@ const DashLayout = () => {
 
       {/* Main content frame */}
       <div className="flex-1 h-full flex flex-col lg:pl-64 transition-all duration-300">
-        {/* Top Header bar */}
-        <Topbar onMenuOpen={() => setIsSidebarOpen(true)} />
+        
+        {/* Mobile Header (Only visible on small screens) */}
+        <div className="lg:hidden flex items-center justify-between px-6 py-4 glass-panel glass-panel-light dark:glass-panel-dark border-b border-black/10 dark:border-white/10 sticky top-0 z-20">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <div className="flex items-center gap-2">
+            <img src="/logo.jpg" alt="Logo" className="h-8 w-8 rounded-lg shadow-md" />
+            <span className="font-orbitron font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-purple tracking-wide">
+              RealVeritas
+            </span>
+          </div>
+        </div>
 
         {/* Dynamic page content container */}
         <main 

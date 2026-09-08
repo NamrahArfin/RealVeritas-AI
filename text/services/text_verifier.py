@@ -161,38 +161,34 @@ class TextVerifier:
         
         # Fallback if model is not loaded (rule-based heuristic)
         if not self.is_loaded:
-            classification = "Authentic"
-            confidence = 80.0
-            score = 90.0
-            
-            # Simple heuristic matching the mock to ensure initial functionality
-            text_hash = sum(ord(c) for c in text) % 3
-            if text_hash == 2:
-                classification = "AI-Generated"
+            # We use burstiness (which relies on NLTK, not deep models) as an actual heuristic fallback
+            if burstiness < 20.0:
+                classification = "AI-Generated (Stylometric Analysis)"
                 score = 25.0
-                confidence = 92.0
-            elif text_hash == 1:
-                classification = "AI-Assisted"
-                score = 58.0
-                confidence = 87.0
-            elif is_manipulated:
-                classification = "Manipulated"
-                score = 45.0
-                confidence = 85.0
-                
-            if classification == "AI-Assisted":
-                summary = "Heuristic baseline. Document exhibits style indicators of human-AI collaboration (polished phrasing)."
+                confidence = 80.0
+                summary = "Deep BERT models were unavailable. However, stylometric analysis detected highly robotic and uniform sentence rhythms typical of AI generation."
                 reasoning = [
-                    f"Vocabulary Variety: {perplexity} (statistical word uniqueness score).",
-                    f"Sentence Rhythm: {burstiness} (sentence length variance profile).",
-                    "Selective polishing/rewriting markers identified in text blocks."
+                    f"Sentence Rhythm: {burstiness} (extremely low variance in sentence lengths).",
+                    "Vocabulary pacing lacks natural human drafting diversity."
                 ]
-            else:
-                summary = "Heuristic baseline. BERT model loading skipped or pending download."
+            elif burstiness < 40.0 or is_manipulated:
+                classification = "AI-Assisted (Stylometric Analysis)"
+                score = 58.0
+                confidence = 70.0
+                summary = "Deep BERT models were unavailable. Stylometric pacing shows moderate uniformity or structural shifts, indicating possible AI-assisted polishing."
                 reasoning = [
-                    f"Vocabulary Variety: {perplexity} (statistical word uniqueness score).",
-                    f"Sentence Rhythm: {burstiness} (sentence length variance profile)."
-                ] + (manip_reasons if is_manipulated else ["Vocabulary pacing suggests natural human drafting."])
+                    f"Sentence Rhythm: {burstiness} (moderate sentence length variance).",
+                    "Selective polishing/rewriting markers potentially present."
+                ] + (manip_reasons if is_manipulated else [])
+            else:
+                classification = "Authentic (Stylometric Analysis)"
+                score = 90.0
+                confidence = 85.0
+                summary = "Deep BERT models were unavailable. Stylometric baseline checks show natural pacing typical of human authors."
+                reasoning = [
+                    f"Sentence Rhythm: {burstiness} (high variance indicative of organic human writing).",
+                    "No obvious mechanical pacing structures detected."
+                ]
             
             highlights = self._extract_rule_based_highlights(text)
             

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   History, Search, LayoutGrid, List, Trash2, 
-  ExternalLink, Eye, ShieldAlert, ShieldCheck, Sparkles, Filter
+  ExternalLink, Eye, ShieldAlert, ShieldCheck, Sparkles, Filter, Activity
 } from 'lucide-react';
 import { useVerification } from '../../context/VerificationContext';
 import GlassCard from '../../components/GlassCard';
@@ -12,7 +12,14 @@ const HistoryPage = () => {
   const navigate = useNavigate();
   const { history, selectVerification, deleteVerification } = useVerification();
   
-  const [viewMode, setViewMode] = useState('table'); // 'table' | 'card'
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('historyViewMode') || 'table';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('historyViewMode', viewMode);
+  }, [viewMode]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all'); // 'all' | 'image' | 'video' | 'audio' | 'text'
   const [selectedClass, setSelectedClass] = useState('all'); // 'all' | 'Authentic' | 'Manipulated' | 'AI-Generated'
@@ -69,11 +76,10 @@ const HistoryPage = () => {
       {/* Header */}
       <div className="border-b border-black/5 dark:border-white/5 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-black font-orbitron text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <span>Audit History Archives</span>
-            <History className="h-5.5 w-5.5 text-brand-blue" />
+          <h2 className="text-3xl font-black font-orbitron bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(14,165,233,0.3)] flex items-center gap-3">
+            Audit History Archives
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
             Search, filter, and inspect past media verification records.
           </p>
         </div>
@@ -155,64 +161,70 @@ const HistoryPage = () => {
       {filteredHistory.length > 0 ? (
         viewMode === 'table' ? (
           /* Table View */
-          <div className="glass-panel glass-panel-light dark:glass-panel-dark rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 shadow-md">
+          /* Table View */
+          <div className="glass-panel-light dark:glass-panel-dark rounded-2xl overflow-hidden border border-white/5 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-black/10 dark:border-white/10 bg-slate-100/30 dark:bg-slate-950/20 text-slate-500 dark:text-slate-400 font-orbitron uppercase text-[9px] font-bold tracking-wider">
-                    <th className="py-4.5 px-6">Audit ID</th>
-                    <th className="py-4.5 px-6">File Reference</th>
-                    <th className="py-4.5 px-6">Medium</th>
-                    <th className="py-4.5 px-6">Classification</th>
-                    <th className="py-4.5 px-6 text-center">Score</th>
-                    <th className="py-4.5 px-6">Timestamp</th>
-                    <th className="py-4.5 px-6 text-right">Actions</th>
+                  <tr className="border-b border-white/10 bg-black/40 text-slate-400 font-orbitron uppercase text-[10px] font-bold tracking-widest">
+                    <th className="py-5 px-6">File Name</th>
+                    <th className="py-5 px-6 text-center">Status</th>
+                    <th className="py-5 px-6 text-center">Type</th>
+                    <th className="py-5 px-6">Date & Time</th>
+                    <th className="py-5 px-6 text-center">Score</th>
+                    <th className="py-5 px-6 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/5 dark:divide-white/5 text-xs">
+                <tbody className="divide-y divide-white/5 text-sm">
                   {filteredHistory.map((item, index) => (
                     <motion.tr 
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
                       key={item.id} 
-                      className="hover:bg-slate-200/20 dark:hover:bg-slate-800/10 transition-colors"
+                      className="hover:bg-white/5 transition-colors group relative"
                     >
-                      <td className="py-4 px-6 font-mono text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-                        {item.id}
+                      <td className="py-5 px-6 relative">
+                        {/* Left glowing border on hover */}
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-gradient-to-b group-hover:from-brand-blue group-hover:to-brand-purple transition-all" />
+                        
+                        <div className="flex items-center gap-4">
+                          <div className={`h-12 w-12 rounded-xl flex flex-col items-center justify-center shrink-0 border ${getMediaBadge(item.fileType)} shadow-inner`}>
+                            <span className="text-[10px] font-black font-orbitron uppercase tracking-wider">{item.fileType.substring(0,3)}</span>
+                          </div>
+                          <div>
+                            <p className="font-bold text-white truncate max-w-xs">{item.fileName}</p>
+                            <p className="text-[10px] font-mono text-slate-500 mt-1">ID: {item.id.substring(0, 8)}...</p>
+                          </div>
+                        </div>
                       </td>
-                      <td className="py-4 px-6 font-semibold truncate max-w-xs text-slate-800 dark:text-slate-200">
-                        {item.fileName}
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className={`inline-block px-2 py-0.5 rounded border text-[9px] font-bold font-orbitron uppercase ${getMediaBadge(item.fileType)}`}>
-                          {item.fileType}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full border text-[9px] font-bold font-orbitron uppercase ${getBadgeColors(item.classification)}`}>
+                      <td className="py-5 px-6 text-center">
+                        <span className={`inline-block px-3 py-1.5 rounded-full border text-[10px] font-black font-orbitron uppercase tracking-wider ${getBadgeColors(item.classification)} shadow-lg`}>
                           {item.classification}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-center font-bold font-orbitron text-slate-700 dark:text-slate-200">
-                        {item.score}
+                      <td className="py-5 px-6 text-center">
+                        <span className="text-xs font-bold text-slate-300 capitalize">{item.fileType}</span>
                       </td>
-                      <td className="py-4 px-6 text-slate-400 dark:text-slate-500 font-medium">
+                      <td className="py-5 px-6 text-xs text-slate-400 font-medium font-mono">
                         {item.date}
                       </td>
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="py-5 px-6 text-center font-bold font-orbitron text-brand-blue">
+                        {item.score}%
+                      </td>
+                      <td className="py-5 px-6 text-right">
+                        <div className="flex items-center justify-end gap-3">
                           <button
                             onClick={() => handleOpenResult(item)}
-                            className="p-1.5 rounded-lg border border-black/5 dark:border-white/5 hover:border-brand-blue/30 hover:bg-brand-blue/5 text-slate-600 dark:text-slate-300 hover:text-brand-blue cursor-pointer transition-colors"
-                            title="Inspect results"
+                            className="p-1.5 text-slate-400 hover:text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-all cursor-pointer"
+                            title="View Details"
                           >
                             <Eye className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => deleteVerification(item.id)}
-                            className="p-1.5 rounded-lg border border-black/5 dark:border-white/5 hover:border-red-500/30 hover:bg-red-500/5 text-slate-600 dark:text-slate-300 hover:text-red-500 cursor-pointer transition-colors"
-                            title="Delete log entry"
+                            className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                            title="Delete Record"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
