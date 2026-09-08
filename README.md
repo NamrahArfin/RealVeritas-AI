@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/framer/motion/main/packages/framer-motion/README.md" onerror="this.style.display='none'"/>
+  <img src="frontend/public/logo.jpg" alt="RealVeritas AI Logo" width="200" />
   
   # 🛡️ RealVeritas AI
   **The Next-Generation AI Forensic Platform for Media Authentication**
