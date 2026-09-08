@@ -58,6 +58,7 @@ backend/models/
 # Generated Media
 static/heatmaps/
 static/uploads/
+test_media/
 
 *.txt
 *.ppt
