@@ -13,9 +13,14 @@ const AudioVerification = () => {
   const { user } = useAuth();
   
   const [fileDetails, setFileDetails] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [animationDone, setAnimationDone] = useState(false);
+  const [apiFinished, setApiFinished] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
   const fileInputRef = useRef(null);
+  const fetchStarted = useRef(false);
 
   // Check if routed with file state from Unified Upload
   useEffect(() => {
@@ -48,13 +53,31 @@ const AudioVerification = () => {
     setIsScanning(true);
   };
 
-  const handleScanComplete = async () => {
-    let resultData = null;
+  // Trigger API fetch once scanning starts
+  useEffect(() => {
+    if (!isScanning || apiFinished || fetchStarted.current) return;
+    fetchStarted.current = true;
 
-    try {
-      let fileToUpload = globalFile;
-      
-      if (fileToUpload) {
+    const fetchVerification = async () => {
+      try {
+        let fileToUpload = globalFile;
+        if (!fileToUpload && previewUrl && previewUrl.startsWith('blob:')) {
+          const res = await fetch(previewUrl);
+          const blob = await res.blob();
+          fileToUpload = new File([blob], fileDetails?.name || 'audio.mp3', { type: blob.type });
+        }
+
+        if (!fileToUpload) {
+          setScanResult({
+            classification: 'Error: No File',
+            score: 0,
+            confidence: 0,
+            summary: 'The file to upload was missing or lost from memory.',
+            reasoning: ['globalFile was null', 'previewUrl could not be fetched']
+          });
+          return;
+        }
+
         const formData = new FormData();
         formData.append('file', fileToUpload);
         if (user?.email) {
@@ -67,41 +90,55 @@ const AudioVerification = () => {
         });
 
         if (response.ok) {
-          resultData = await response.json();
+          const data = await response.json();
+          setScanResult(data);
         } else {
-          const errorData = await response.json();
-          alert(`Analysis Failed: ${errorData.detail || 'Server rejected the file'}`);
-          setIsScanning(false);
-          return;
+          const errorData = await response.json().catch(() => ({}));
+          setScanResult({
+            classification: `Error: HTTP ${response.status}`,
+            score: 0,
+            confidence: 0,
+            summary: errorData.detail || 'Server rejected the file',
+            reasoning: ['Backend returned an error status.']
+          });
         }
+      } catch (err) {
+        console.error("Backend upload failed", err);
+        setScanResult({
+          classification: 'Error: Network/Exception',
+          score: 0,
+          confidence: 0,
+          summary: err.message || 'Unknown network error',
+          reasoning: ['Fetch threw an exception.', err.toString()]
+        });
+      } finally {
+        setApiFinished(true);
       }
-    } catch (err) {
-      console.error("Backend upload failed", err);
-      // Fallback only if the backend is completely unreachable
+    };
+
+    fetchVerification();
+  }, [isScanning, globalFile, previewUrl, fileDetails, user]);
+
+  // Sync animation completion and API completion
+  useEffect(() => {
+    if (animationDone && apiFinished) {
+      const record = addVerification({
+        fileName: fileDetails?.name || 'Unknown',
+        fileType: 'audio',
+        classification: scanResult?.classification || 'Error: Null Result',
+        score: scanResult?.score || 0,
+        confidence: scanResult?.confidence || 0,
+        summary: scanResult?.summary || 'scanResult was undefined.',
+        reasoning: scanResult?.reasoning || [],
+        content: null
+      });
+
+      navigate('/results', { state: { resultId: record.id } });
     }
+  }, [animationDone, apiFinished, scanResult, navigate, addVerification, fileDetails]);
 
-    if (!resultData) {
-      resultData = {
-        classification: 'Authentic',
-        score: 94,
-        confidence: 96,
-        summary: 'Vocal tracts resonate normally. Phase signatures check out with natural environmental sub-harmonics. (Offline fallback)',
-        reasoning: ['Phase alignment profiles consistent across full recording duration.']
-      };
-    }
-
-    const record = addVerification({
-      fileName: fileDetails.name,
-      fileType: 'audio',
-      classification: resultData.classification,
-      score: resultData.score,
-      confidence: resultData.confidence,
-      summary: resultData.summary,
-      reasoning: resultData.reasoning,
-      heatmap_url: resultData.heatmap_url
-    });
-
-    navigate('/results', { state: { resultId: record.id } });
+  const handleScanComplete = () => {
+    setAnimationDone(true);
   };
 
   return (

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Upload, Image, Video, Volume2, FileText, 
-  FileCode, ArrowRight
+  FileCode, ArrowRight, Sparkles
 } from 'lucide-react';
 import GlassCard from '../../components/GlassCard';
 import { useVerification } from '../../context/VerificationContext';
@@ -213,10 +213,10 @@ const UploadMedia = () => {
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                   onClick={!file ? triggerFileInput : undefined}
-                  className={`w-full max-w-2xl border-2 border-dashed rounded-2xl p-10 text-center flex flex-col items-center justify-center min-h-[320px] transition-all duration-300 relative overflow-hidden group ${
+                  className={`w-full max-w-2xl border-2 border-dashed rounded-2xl p-10 text-center flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden group ${
                     file 
                       ? 'border-brand-purple/50 bg-brand-purple/5 shadow-[0_0_30px_rgba(99,102,241,0.1)]' 
-                      : 'border-brand-blue/30 hover:border-brand-blue bg-brand-blue/5 hover:bg-brand-blue/10 shadow-[0_0_30px_rgba(14,165,233,0.1)] cursor-pointer'
+                      : 'min-h-[320px] border-brand-blue/30 hover:border-brand-blue bg-brand-blue/5 hover:bg-brand-blue/10 shadow-[0_0_30px_rgba(14,165,233,0.1)] cursor-pointer'
                   }`}
                 >
                   {/* Glowing Pulse behind dropzone */}
@@ -257,7 +257,7 @@ const UploadMedia = () => {
                     </div>
                   ) : (
                     /* File Loaded Preview State */
-                    <div className="space-y-6 w-full max-w-md relative z-10">
+                    <div className="space-y-6 w-full relative z-10">
                       {/* Visual Preview */}
                       {activeTab === 'image' && previewUrl ? (
                         <div className="relative h-48 rounded-xl overflow-hidden border border-brand-purple/30 bg-slate-900 mx-auto shadow-[0_0_20px_rgba(99,102,241,0.2)]">
@@ -304,23 +304,21 @@ const UploadMedia = () => {
                           Choose Different
                         </button>
                       </div>
+
+                      <div className="w-full pt-4 mx-auto flex justify-center">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleAnalyze}
+                          className="w-full py-4 rounded-xl font-bold font-orbitron text-sm text-white bg-gradient-to-r from-brand-blue via-brand-purple to-brand-blue bg-[length:200%_auto] shadow-[0_0_30px_rgba(14,165,233,0.4)] flex items-center justify-center gap-3 cursor-pointer border border-white/20"
+                        >
+                          <Sparkles className="h-5 w-5" />
+                          <span>UPLOAD & ANALYZE</span>
+                        </motion.button>
+                      </div>
                     </div>
                   )}
                 </div>
-                
-                {file && (
-                  <div className="w-full max-w-2xl mt-4">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleAnalyze}
-                      className="w-full py-4 rounded-xl font-bold font-orbitron text-sm text-white bg-gradient-to-r from-brand-blue via-brand-purple to-brand-blue bg-[length:200%_auto] animate-[shimmer_2s_linear_infinite] shadow-[0_0_30px_rgba(14,165,233,0.4)] flex items-center justify-center gap-3 cursor-pointer border border-white/20"
-                    >
-                      <Sparkles className="h-5 w-5" />
-                      <span>UPLOAD & ANALYZE</span>
-                    </motion.button>
-                  </div>
-                )}
               </div>
             ) : (
               /* Text Input form */
@@ -378,17 +376,17 @@ const UploadMedia = () => {
 
                 <div className="flex justify-end pt-2">
                   <motion.button
-                    whileHover={textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 50 ? { scale: 1.02 } : {}}
-                    whileTap={textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 50 ? { scale: 0.98 } : {}}
+                    whileHover={textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 10 ? { scale: 1.02 } : {}}
+                    whileTap={textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 10 ? { scale: 0.98 } : {}}
                     onClick={handleAnalyze}
-                    disabled={!textContent.trim() || textContent.split(/\s+/).filter(Boolean).length < 50}
+                    disabled={!textContent.trim() || textContent.split(/\s+/).filter(Boolean).length < 10}
                     className={`px-8 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white transition-all flex items-center gap-2 cursor-pointer ${
-                      textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 50
+                      textContent.trim() && textContent.split(/\s+/).filter(Boolean).length >= 10
                         ? 'bg-gradient-to-r from-brand-blue to-brand-purple shadow-md hover:shadow-[0_0_20px_rgba(14,165,233,0.3)]'
                         : 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed'
                     }`}
                   >
-                    <span>Analyze Content</span>
+                    <span>{(!textContent.trim() || textContent.split(/\s+/).filter(Boolean).length < 10) ? 'Requires 10+ Words' : 'Analyze Content'}</span>
                     <ArrowRight className="h-4 w-4" />
                   </motion.button>
                 </div>

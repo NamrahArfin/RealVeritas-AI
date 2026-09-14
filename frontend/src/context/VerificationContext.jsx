@@ -77,7 +77,15 @@ export const VerificationProvider = ({ children }) => {
   const historyKey = user?.email ? `verification_history_${user.email}` : 'verification_history';
   const resultKey = user?.email ? `current_result_${user.email}` : 'current_result';
 
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem(historyKey);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch(e) {}
+    return SEED_DATA;
+  });
   const [globalFile, setGlobalFile] = useState(null);
 
   const [currentResult, setCurrentResult] = useState(() => {
@@ -90,10 +98,27 @@ export const VerificationProvider = ({ children }) => {
     if (user?.email) {
       fetch(`http://127.0.0.1:8000/history?user_email=${encodeURIComponent(user.email)}&t=${Date.now()}`)
         .then(res => res.json())
-        .then(data => setHistory(data))
+        .then(data => {
+            setHistory(prev => {
+                const merged = [...data];
+                const dataIds = new Set(data.map(d => d.id));
+                for (const item of prev) {
+                    if (!dataIds.has(item.id)) {
+                        merged.push(item);
+                    }
+                }
+                merged.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+                return merged;
+            });
+        })
         .catch(err => console.error("Failed to fetch history:", err));
     } else {
-      setHistory([]);
+      try {
+        const saved = localStorage.getItem(historyKey);
+        setHistory(saved ? JSON.parse(saved) : SEED_DATA);
+      } catch(e) {
+        setHistory(SEED_DATA);
+      }
     }
 
     const savedResult = localStorage.getItem(resultKey);
@@ -105,6 +130,12 @@ export const VerificationProvider = ({ children }) => {
       localStorage.setItem(resultKey, JSON.stringify(currentResult));
     }
   }, [currentResult, resultKey]);
+
+  useEffect(() => {
+    if (history.length > 0) {
+      localStorage.setItem(historyKey, JSON.stringify(history));
+    }
+  }, [history, historyKey]);
 
   const addVerification = useCallback((item) => {
     const newItem = {

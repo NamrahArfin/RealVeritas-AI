@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FileText, Upload, ShieldAlert, ArrowLeft, Play } from 'lucide-react';
 import GlassCard from '../../components/GlassCard';
@@ -17,7 +17,7 @@ const TextVerification = () => {
   const [scanResult, setScanResult] = useState(null);
   const [apiFinished, setApiFinished] = useState(false);
   const [animationDone, setAnimationDone] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const fetchStarted = useRef(false);
 
   // Check if routed with text state from Unified Upload
   useEffect(() => {
@@ -32,7 +32,8 @@ const TextVerification = () => {
 
   // Trigger API fetch once scanning starts
   useEffect(() => {
-    if (!isScanning) return;
+    if (!isScanning || apiFinished || fetchStarted.current) return;
+    fetchStarted.current = true;
     
     let isMounted = true;
     const fetchVerification = async () => {
@@ -48,19 +49,36 @@ const TextVerification = () => {
           })
         });
         
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (isMounted) {
-          setScanResult(data);
-          setApiFinished(true);
+        if (response.ok) {
+          const data = await response.json();
+          if (isMounted) {
+            setScanResult(data);
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          if (isMounted) {
+            setScanResult({
+              classification: `Error: HTTP ${response.status}`,
+              score: 0,
+              confidence: 0,
+              summary: errorData.detail || 'Server rejected the text',
+              reasoning: ['Backend returned an error status.']
+            });
+          }
         }
       } catch (err) {
         console.error('Text verification failed:', err);
         if (isMounted) {
-          setErrorMessage(err.message || 'Connection failed.');
+          setScanResult({
+            classification: 'Error: Network/Exception',
+            score: 0,
+            confidence: 0,
+            summary: err.message || 'Unknown network error',
+            reasoning: ['Fetch threw an exception.', err.toString()]
+          });
+        }
+      } finally {
+        if (isMounted) {
           setApiFinished(true);
         }
       }
@@ -70,123 +88,25 @@ const TextVerification = () => {
     return () => {
       isMounted = false;
     };
-  }, [isScanning, textInput]);
+  }, [isScanning, textInput, apiFinished, user]);
 
   // Sync animation completion and API completion
   useEffect(() => {
     if (animationDone && apiFinished) {
-      if (scanResult) {
-        const record = addVerification({
-          fileName: textInput.substring(0, 30).trim() + (textInput.length > 30 ? '...' : '') + ' (.txt)',
-          fileType: 'text',
-          classification: scanResult.classification,
-          score: scanResult.score,
-          confidence: scanResult.confidence,
-          summary: scanResult.summary,
-          reasoning: scanResult.reasoning,
-          content: textInput, // Save full text
-          highlights: scanResult.highlights || []
-        });
-        navigate('/results', { state: { resultId: record.id } });
-      } else {
-        // Fallback simulation if backend fails (robust offline dev)
-        console.log("Using client-side fallback due to backend error:", errorMessage);
-        
-        const text = textInput.toLowerCase();
-        let classification = 'Authentic';
-        let score = 92;
-        let confidence = 93;
-        let summary = 'Document exhibits natural vocabulary variety. Sentence length patterns show highly organic variance (high sentence rhythm).';
-        let reasoning = [
-          'Vocabulary Variety: 84.6 (very high, indicating non-predictable word choices).',
-          'Sentence Rhythm: 68.2 (significant sentence length variance, typical of human authors).',
-          'No repetition anomalies found in transitional or grammatical adverb markers.'
-        ];
-        let highlights = [];
-
-        // If text contains signs of AI generation
-        if ((text.includes('furthermore') && text.includes('moreover') && text.includes('in conclusion')) || text.includes('as an ai language model') || text.includes('smart grid') || (text.length > 500 && textInput.split(/\s+/).length % 3 === 0)) {
-          classification = 'AI-Generated';
-          score = 28;
-          confidence = 96;
-          summary = 'High statistical likelihood of GPT-4 generation. Sentence rhythm is abnormally low, indicating uniform writing cadence.';
-          reasoning = [
-            'Vocabulary Variety: 18.2 (highly predictable word choices, characteristic of LLM generators).',
-            'Sentence Rhythm: 12.4 (uniform sentence lengths indicate automated pacing).',
-            'Frequent transitional clusters identified: "Furthermore", "Moreover", "In conclusion" in adjacent paragraphs.',
-            'Zero spelling mistakes or colloquial phrasing anomalies identified.'
-          ];
-          
-          // Generate synthetic rule-based highlights
-          const addHighlight = (word) => {
-            const startIdx = text.indexOf(word.toLowerCase());
-            if (startIdx !== -1) {
-              highlights.push({
-                word: word,
-                type: "ai",
-                score: 9.0,
-                start: startIdx,
-                end: startIdx + word.length
-              });
-            }
-          };
-          addHighlight("Furthermore");
-          addHighlight("Moreover");
-          addHighlight("conclusion");
-        } else if (text.includes('polished') || text.includes('assisted') || text.includes('improved')) {
-          classification = 'AI-Assisted';
-          score = 58;
-          confidence = 87;
-          summary = 'Document exhibits signatures of human-AI collaboration. The overall structure is organic, but specific sentences are polished using language tools.';
-          reasoning = [
-            'Vocabulary Variety: 45.3 (moderate vocabulary variety, reflecting edited passages).',
-            'Sentence Rhythm: 35.8 (moderate pacing variation, indicating human content revision).',
-            'Highlights show selective polishing of academic/formal phrasing.'
-          ];
-          
-          // Generate synthetic rule-based highlights
-          const addHighlight = (word) => {
-            const startIdx = text.indexOf(word.toLowerCase());
-            if (startIdx !== -1) {
-              highlights.push({
-                word: word,
-                type: "ai",
-                score: 7.5,
-                start: startIdx,
-                end: startIdx + word.length
-              });
-            }
-          };
-          addHighlight("polished");
-          addHighlight("assisted");
-          addHighlight("improved");
-        } else if (text.includes('manipulated') || text.includes('edited') || text.includes('splice')) {
-          classification = 'Manipulated';
-          score = 48;
-          confidence = 88;
-          summary = 'Document shows signs of localized editor splicing. Sudden changes in vocabulary levels and style structures detected.';
-          reasoning = [
-            'Sudden writing style delta between paragraph 2 and 3.',
-            'Inconsistent formatting/Unicode control characters hidden in text lines.',
-            'Style metric shift: Readability score jumps from grade 8 to grade 16 level instantly.'
-          ];
-        }
-
-        const record = addVerification({
-          fileName: textInput.substring(0, 30).trim() + (textInput.length > 30 ? '...' : '') + ' (.txt)',
-          fileType: 'text',
-          classification,
-          score,
-          confidence,
-          summary,
-          reasoning,
-          content: textInput,
-          highlights
-        });
-        navigate('/results', { state: { resultId: record.id } });
-      }
+      const record = addVerification({
+        fileName: textInput.substring(0, 30).trim() + (textInput.length > 30 ? '...' : '') + ' (.txt)',
+        fileType: 'text',
+        classification: scanResult?.classification || 'Error: Null Result',
+        score: scanResult?.score || 0,
+        confidence: scanResult?.confidence || 0,
+        summary: scanResult?.summary || 'scanResult was undefined.',
+        reasoning: scanResult?.reasoning || [],
+        content: textInput, // Save full text
+        highlights: scanResult?.highlights || []
+      });
+      navigate('/results', { state: { resultId: record.id } });
     }
-  }, [animationDone, apiFinished, scanResult, navigate, addVerification, textInput, errorMessage]);
+  }, [animationDone, apiFinished, scanResult, navigate, addVerification, textInput]);
 
   const startAnalysis = () => {
     if (!textInput.trim()) return;
@@ -257,17 +177,17 @@ const TextVerification = () => {
                 </button>
                 <button
                   onClick={startAnalysis}
-                  disabled={!textInput.trim() || textInput.split(/\s+/).filter(Boolean).length < 50}
+                  disabled={!textInput.trim() || textInput.split(/\s+/).filter(Boolean).length < 10}
                   className={`flex-1 py-3.5 rounded-xl font-bold font-orbitron text-xs text-white transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    textInput.trim() && textInput.split(/\s+/).filter(Boolean).length >= 50
+                    textInput.trim() && textInput.split(/\s+/).filter(Boolean).length >= 10
                       ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-md hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.01] active:scale-[0.99]'
                       : 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-600 cursor-not-allowed'
                   }`}
                 >
                   <Play className="h-4 w-4" />
                   <span>
-                    {(textInput.trim().length > 0 && textInput.split(/\s+/).filter(Boolean).length < 50)
-                      ? 'Requires 50+ Words' 
+                    {(textInput.trim().length > 0 && textInput.split(/\s+/).filter(Boolean).length < 10)
+                      ? 'Requires 10+ Words' 
                       : 'Start Authenticity Scan'}
                   </span>
                 </button>

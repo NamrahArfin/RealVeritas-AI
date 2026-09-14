@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   History, Search, LayoutGrid, List, Trash2, 
-  ExternalLink, Eye, ShieldAlert, ShieldCheck, Sparkles, Filter, Activity
+  ExternalLink, Eye, ShieldAlert, ShieldCheck, Sparkles, Filter, Activity,
+  Image, Video, Volume2, FileText
 } from 'lucide-react';
 import { useVerification } from '../../context/VerificationContext';
 import GlassCard from '../../components/GlassCard';
@@ -63,6 +64,16 @@ const HistoryPage = () => {
       case 'video': return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
       case 'audio': return 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20';
       default: return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+    }
+  };
+
+  const getMediaIcon = (type, className = "h-5 w-5") => {
+    switch (type) {
+      case 'image': return <Image className={className} />;
+      case 'video': return <Video className={className} />;
+      case 'audio': return <Volume2 className={className} />;
+      case 'text': return <FileText className={className} />;
+      default: return <FileText className={className} />;
     }
   };
 
@@ -190,7 +201,7 @@ const HistoryPage = () => {
                         
                         <div className="flex items-center gap-4">
                           <div className={`h-12 w-12 rounded-xl flex flex-col items-center justify-center shrink-0 border ${getMediaBadge(item.fileType)} shadow-inner`}>
-                            <span className="text-[10px] font-black font-orbitron uppercase tracking-wider">{item.fileType.substring(0,3)}</span>
+                            {getMediaIcon(item.fileType, "h-5 w-5 opacity-90")}
                           </div>
                           <div>
                             <p className="font-bold text-white truncate max-w-xs">{item.fileName}</p>
@@ -248,7 +259,8 @@ const HistoryPage = () => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[9px] text-slate-500 font-bold">{item.id}</span>
-                    <span className={`px-2 py-0.5 rounded border text-[8px] font-bold font-orbitron uppercase ${getMediaBadge(item.fileType)}`}>
+                    <span className={`px-2 py-1 flex items-center gap-1.5 rounded border text-[9px] font-bold font-orbitron uppercase ${getMediaBadge(item.fileType)}`}>
+                      {getMediaIcon(item.fileType, "h-3 w-3")}
                       {item.fileType}
                     </span>
                   </div>

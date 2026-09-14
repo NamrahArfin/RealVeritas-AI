@@ -85,14 +85,19 @@ const VerificationLogs = ({ type, onComplete }) => {
     };
   }, [type]);
 
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   useEffect(() => {
     if (progress === 100 && logs.length > 0) {
       const timeout = setTimeout(() => {
-        if (onComplete) onComplete();
+        if (onCompleteRef.current) onCompleteRef.current();
       }, 500);
       return () => clearTimeout(timeout);
     }
-  }, [progress, logs, onComplete]);
+  }, [progress, logs.length]);
 
   useEffect(() => {
     if (containerRef.current) {

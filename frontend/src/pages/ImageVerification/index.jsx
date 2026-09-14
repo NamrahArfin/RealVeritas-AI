@@ -15,7 +15,11 @@ const ImageVerification = () => {
   const [fileDetails, setFileDetails] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [animationDone, setAnimationDone] = useState(false);
+  const [apiFinished, setApiFinished] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
   const fileInputRef = useRef(null);
+  const fetchStarted = useRef(false);
 
   // Check if routed with file state from Unified Upload
   useEffect(() => {
@@ -52,18 +56,31 @@ const ImageVerification = () => {
     setIsScanning(true);
   };
 
-  const handleScanComplete = async () => {
-    let resultData = null;
+  // Trigger API fetch once scanning starts
+  useEffect(() => {
+    if (!isScanning || apiFinished || fetchStarted.current) return;
+    fetchStarted.current = true;
 
-    try {
-      let fileToUpload = globalFile;
-      if (!fileToUpload && previewUrl && previewUrl.startsWith('blob:')) {
-        const res = await fetch(previewUrl);
-        const blob = await res.blob();
-        fileToUpload = new File([blob], fileDetails.name || 'image.jpg', { type: blob.type });
-      }
+    const fetchVerification = async () => {
+      try {
+        let fileToUpload = globalFile;
+        if (!fileToUpload && previewUrl && previewUrl.startsWith('blob:')) {
+          const res = await fetch(previewUrl);
+          const blob = await res.blob();
+          fileToUpload = new File([blob], fileDetails?.name || 'image.jpg', { type: blob.type });
+        }
 
-      if (fileToUpload) {
+        if (!fileToUpload) {
+          setScanResult({
+            classification: 'Error: No File',
+            score: 0,
+            confidence: 0,
+            summary: 'The file to upload was missing or lost from memory.',
+            reasoning: ['globalFile was null', 'previewUrl could not be fetched']
+          });
+          return;
+        }
+
         const formData = new FormData();
         formData.append('file', fileToUpload);
         if (user?.email) {
@@ -76,44 +93,57 @@ const ImageVerification = () => {
         });
 
         if (response.ok) {
-          resultData = await response.json();
+          const data = await response.json();
+          setScanResult(data);
         } else {
-          const errorData = await response.json();
-          alert(`Analysis Failed: ${errorData.detail || 'Server rejected the file'}`);
-          setIsScanning(false);
-          return;
+          const errorData = await response.json().catch(() => ({}));
+          setScanResult({
+            classification: `Error: HTTP ${response.status}`,
+            score: 0,
+            confidence: 0,
+            summary: errorData.detail || 'Server rejected the file',
+            reasoning: ['Backend returned an error status.']
+          });
         }
+      } catch (err) {
+        console.error("Backend upload failed", err);
+        setScanResult({
+          classification: 'Error: Network/Exception',
+          score: 0,
+          confidence: 0,
+          summary: err.message || 'Unknown network error',
+          reasoning: ['Fetch threw an exception.', err.toString()]
+        });
+      } finally {
+        setApiFinished(true);
       }
-    } catch (err) {
-      console.error("Backend upload failed", err);
-      // Fallback only if the backend is completely unreachable (network error)
+    };
+
+    fetchVerification();
+  }, [isScanning, globalFile, previewUrl, fileDetails, user]);
+
+  // Sync animation completion and API completion
+  useEffect(() => {
+    if (animationDone && apiFinished) {
+      // Add verification record
+      const record = addVerification({
+        fileName: fileDetails?.name || 'Unknown',
+        fileType: 'image',
+        classification: scanResult?.classification || 'Error: Null Result',
+        score: scanResult?.score || 0,
+        confidence: scanResult?.confidence || 0,
+        summary: scanResult?.summary || 'scanResult was undefined.',
+        reasoning: scanResult?.reasoning || [],
+        content: previewUrl, 
+        heatmap_url: scanResult?.heatmap_url 
+      });
+
+      navigate('/results', { state: { resultId: record.id } });
     }
+  }, [animationDone, apiFinished, scanResult, navigate, addVerification, fileDetails, previewUrl]);
 
-    if (!resultData) {
-      resultData = {
-        classification: 'Authentic',
-        score: 96,
-        confidence: 95,
-        summary: 'No visual splices, compression errors, or structural camera noise discrepancies identified. (Offline fallback)',
-        reasoning: ['CFA Pattern: Camera noise field consistency is uniform (deviation < 2%).']
-      };
-    }
-
-    // Add verification record
-    const record = addVerification({
-      fileName: fileDetails.name,
-      fileType: 'image',
-      classification: resultData.classification,
-      score: resultData.score,
-      confidence: resultData.confidence,
-      summary: resultData.summary,
-      reasoning: resultData.reasoning,
-      content: previewUrl, // Save image preview URL as content reference
-      heatmap_url: resultData.heatmap_url // Add Grad-CAM heatmap overlay
-    });
-
-    // Route to results
-    navigate('/results', { state: { resultId: record.id } });
+  const handleScanComplete = () => {
+    setAnimationDone(true);
   };
 
   return (

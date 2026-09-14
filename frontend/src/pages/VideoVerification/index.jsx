@@ -13,8 +13,13 @@ const VideoVerification = () => {
   const { user } = useAuth();
   
   const [fileDetails, setFileDetails] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [animationDone, setAnimationDone] = useState(false);
+  const [apiFinished, setApiFinished] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
   const fileInputRef = useRef(null);
+  const fetchStarted = useRef(false);
 
   // Check if routed with file state from Unified Upload
   useEffect(() => {
@@ -23,6 +28,9 @@ const VideoVerification = () => {
         name: location.state.fileName,
         size: location.state.fileSize || 'Unknown size'
       });
+      if (location.state.previewUrl) {
+        setPreviewUrl(location.state.previewUrl);
+      }
       setIsScanning(true); // Auto-start scan
     } else {
       // Direct access landing redirect to Unified Upload under the same tab
@@ -36,6 +44,7 @@ const VideoVerification = () => {
 
     setFileDetails({ name: file.name, size: (file.size / (1024 * 1024)).toFixed(2) + ' MB' });
     setGlobalFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
   const triggerSelect = () => {
@@ -47,13 +56,31 @@ const VideoVerification = () => {
     setIsScanning(true);
   };
 
-  const handleScanComplete = async () => {
-    let resultData = null;
+  // Trigger API fetch once scanning starts
+  useEffect(() => {
+    if (!isScanning || apiFinished || fetchStarted.current) return;
+    fetchStarted.current = true;
 
-    try {
-      let fileToUpload = globalFile;
-      
-      if (fileToUpload) {
+    const fetchVerification = async () => {
+      try {
+        let fileToUpload = globalFile;
+        if (!fileToUpload && previewUrl && previewUrl.startsWith('blob:')) {
+          const res = await fetch(previewUrl);
+          const blob = await res.blob();
+          fileToUpload = new File([blob], fileDetails?.name || 'video.mp4', { type: blob.type });
+        }
+
+        if (!fileToUpload) {
+          setScanResult({
+            classification: 'Error: No File',
+            score: 0,
+            confidence: 0,
+            summary: 'The file to upload was missing or lost from memory.',
+            reasoning: ['globalFile was null', 'previewUrl could not be fetched']
+          });
+          return;
+        }
+
         const formData = new FormData();
         formData.append('file', fileToUpload);
         if (user?.email) {
@@ -66,34 +93,55 @@ const VideoVerification = () => {
         });
 
         if (response.ok) {
-          resultData = await response.json();
+          const data = await response.json();
+          setScanResult(data);
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          setScanResult({
+            classification: `Error: HTTP ${response.status}`,
+            score: 0,
+            confidence: 0,
+            summary: errorData.detail || 'Server rejected the file',
+            reasoning: ['Backend returned an error status.']
+          });
         }
+      } catch (err) {
+        console.error("Backend upload failed", err);
+        setScanResult({
+          classification: 'Error: Network/Exception',
+          score: 0,
+          confidence: 0,
+          summary: err.message || 'Unknown network error',
+          reasoning: ['Fetch threw an exception.', err.toString()]
+        });
+      } finally {
+        setApiFinished(true);
       }
-    } catch (err) {
-      console.error("Backend upload failed", err);
+    };
+
+    fetchVerification();
+  }, [isScanning, globalFile, previewUrl, fileDetails, user]);
+
+  // Sync animation completion and API completion
+  useEffect(() => {
+    if (animationDone && apiFinished) {
+      const record = addVerification({
+        fileName: fileDetails?.name || 'Unknown',
+        fileType: 'video',
+        classification: scanResult?.classification || 'Error: Null Result',
+        score: scanResult?.score || 0,
+        confidence: scanResult?.confidence || 0,
+        summary: scanResult?.summary || 'scanResult was undefined.',
+        reasoning: scanResult?.reasoning || [],
+        content: null
+      });
+
+      navigate('/results', { state: { resultId: record.id } });
     }
+  }, [animationDone, apiFinished, scanResult, navigate, addVerification, fileDetails]);
 
-    if (!resultData) {
-      resultData = {
-        classification: 'Authentic',
-        score: 95,
-        confidence: 94,
-        summary: 'No face-swaps, temporal inconsistencies, or lip-sync anomalies found across frames. (Offline fallback)',
-        reasoning: ['Facial landmarks tracking: Bland-Altman variance is uniform across 480 extracted frames.']
-      };
-    }
-
-    const record = addVerification({
-      fileName: fileDetails.name,
-      fileType: 'video',
-      classification: resultData.classification,
-      score: resultData.score,
-      confidence: resultData.confidence,
-      summary: resultData.summary,
-      reasoning: resultData.reasoning
-    });
-
-    navigate('/results', { state: { resultId: record.id } });
+  const handleScanComplete = () => {
+    setAnimationDone(true);
   };
 
   return (

@@ -15,7 +15,14 @@ from bson import ObjectId
 from PIL import Image
 import uuid
 import json
-import google.generativeai as genai
+import os
+try:
+    from mistralai import Mistral
+except ImportError:
+    try:
+        from mistralai.client import MistralClient as Mistral
+    except ImportError:
+        Mistral = None
 from dotenv import load_dotenv
 
 # Add root directory to path to access modules outside backend
@@ -27,15 +34,18 @@ from video.services.video_verifier import VideoVerifier
 import bcrypt
 
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
 
 async def generate_dynamic_report(file_type, classification, confidence, original_summary, original_reasoning):
-    api_key = os.getenv("GEMINI_API_KEY", "")
+    api_key = os.getenv("MISTRAL_API_KEY", "")
     if not api_key or api_key == "YOUR_API_KEY_HERE":
         return original_summary, original_reasoning
         
     try:
-        model = genai.GenerativeModel('gemini-flash-latest')
+        import asyncio
+        if Mistral:
+            client = Mistral(api_key=api_key)
+        else:
+            return original_summary, original_reasoning
         prompt = f"""
 You are an expert digital forensics AI translating complex technical reports into simple, easy-to-understand explanations for non-technical users.
 A {file_type} was scanned and classified as {classification} with a confidence score of {confidence}%.
@@ -57,14 +67,22 @@ Output ONLY in this exact JSON format, nothing else:
   ]
 }}
 """
-        response = await model.generate_content_async(prompt)
-        text = response.text.strip()
+        def _get_mistral_completion():
+            return client.chat.complete(
+                model="mistral-small-latest",
+                messages=[{"role": "user", "content": prompt}]
+            )
+        response = await asyncio.wait_for(asyncio.to_thread(_get_mistral_completion), timeout=3.0)
+        text = response.choices[0].message.content.strip()
         if text.startswith("```json"):
             text = text[7:-3]
         elif text.startswith("```"):
             text = text[3:-3]
         data = json.loads(text.strip())
         return data.get("summary", original_summary), data.get("reasoning", original_reasoning)
+    except asyncio.TimeoutError:
+        print("LLM Generation timed out (likely due to rate limit retries). Using fallback.")
+        return original_summary, original_reasoning
     except Exception as e:
         print(f"LLM Generation failed: {e}")
         return original_summary, original_reasoning
@@ -77,7 +95,14 @@ app = FastAPI()
 # Configure CORS for frontend React app
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins in development
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -264,7 +289,10 @@ async def login_user(req: LoginRequest):
     if not db_connected:
         raise HTTPException(status_code=500, detail="Database offline. Cannot authenticate.")
         
-    user_doc = users_collection.find_one({"email": req.email.lower()})
+    try:
+        user_doc = users_collection.find_one({"email": req.email.lower()})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Database connection failed. Please ensure MongoDB is running.")
     
     if not user_doc or not bcrypt.checkpw(req.password.encode('utf-8'), user_doc["password"].encode('utf-8')):
         raise HTTPException(status_code=401, detail="System verification failed. Invalid credentials.")
@@ -315,8 +343,9 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
 
     if is_image:
         try:
+            from fastapi.concurrency import run_in_threadpool
             print("Processing image with ImageVerifier...")
-            image_res = image_verifier_service.verify_image(file_path)
+            image_res = await run_in_threadpool(image_verifier_service.verify_image, file_path)
             result_label = image_res["classification"]
             confidence = image_res["confidence"]
             score = image_res["score"]
@@ -332,8 +361,9 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
     
     elif is_audio:
         try:
+            from fastapi.concurrency import run_in_threadpool
             print("Processing audio with AudioVerifier...")
-            audio_res = audio_verifier_service.verify_audio(file_path)
+            audio_res = await run_in_threadpool(audio_verifier_service.verify_audio, file_path)
             result_label = audio_res["classification"]
             confidence = audio_res["confidence"]
             score = audio_res["score"]
@@ -345,8 +375,9 @@ async def upload_file(file: UploadFile = File(...), user_email: Optional[str] = 
             
     elif is_video:
         try:
+            from fastapi.concurrency import run_in_threadpool
             print("Processing video with VideoVerifier...")
-            video_res = video_verifier_service.verify_video(file_path)
+            video_res = await run_in_threadpool(video_verifier_service.verify_video, file_path)
             result_label = video_res["classification"]
             confidence = video_res["confidence"]
             score = video_res["score"]
@@ -426,10 +457,10 @@ async def verify_text_endpoint(payload: TextVerificationRequest):
         raise HTTPException(status_code=400, detail="Text input cannot be empty.")
 
     word_count = len(payload.text.split())
-    if word_count < 150:
+    if word_count < 5:
         raise HTTPException(
             status_code=400, 
-            detail=f"Text is too short for accurate analysis. Please provide at least 150 words. (Current count: {word_count})"
+            detail=f"Text is too short for accurate analysis. Please provide at least 5 words. (Current count: {word_count})"
         )
 
     try:
@@ -508,7 +539,7 @@ def get_history(user_email: str):
                     ext = os.path.splitext(item.get("filename", ""))[1].lower()
                     fileType = "image"
                     if ext in [".mp4", ".mov", ".mkv"]: fileType = "video"
-                    elif ext in [".wav", ".mp3", ".aac"]: fileType = "audio"
+                    elif ext in [".wav", ".mp3", ".aac", ".ogg"]: fileType = "audio"
                     
                     date_str = ""
                     if "uploaded_at" in item:
@@ -613,4 +644,5 @@ def delete_record(id: str):
     return {
         "message": "Record deleted successfully"
     }
-# Trigger reload for uvicorn
+# Trigger reload for uvicorn 2
+# Trigger uvicorn reload
